@@ -1,0 +1,87 @@
+<div class="accounts-page">
+  <div class="page-header">
+    <h1>Accounts</h1>
+    <p class="subtitle">Your connected financial accounts</p>
+  </div>
+
+  <div *ngIf="error" class="alert alert-error">{{ error }}</div>
+  <div *ngIf="loading" class="loading">Loading accounts...</div>
+
+  <div *ngIf="!loading">
+    <div *ngIf="accounts.length === 0" class="empty-state">
+      <div class="empty-icon">🏦</div>
+      <h2>No Accounts Connected</h2>
+      <p>Connect your bank accounts and credit cards via Plaid to get started.</p>
+    </div>
+
+    <div *ngIf="depositoryAccounts.length > 0" class="account-group">
+      <h2>Bank Accounts</h2>
+      <div class="account-grid">
+        <div *ngFor="let account of depositoryAccounts" class="account-card">
+          <div class="account-header">
+            <div class="account-type-badge depository">{{ getAccountTypeLabel(account.type) }}</div>
+            <span class="institution">{{ account.institution }}</span>
+          </div>
+          <h3>{{ account.name }}</h3>
+          <div class="balances">
+            <div class="balance-row">
+              <span class="label">Current Balance</span>
+              <span class="value">{{ account.currentBalance | currency }}</span>
+            </div>
+            <div *ngIf="account.availableBalance !== null" class="balance-row">
+              <span class="label">Available Balance</span>
+              <span class="value">{{ account.availableBalance | currency }}</span>
+            </div>
+          </div>
+          <div class="subtype" *ngIf="account.subtype">{{ account.subtype }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="creditAccounts.length > 0" class="account-group">
+      <h2>Credit Cards</h2>
+      <div class="account-grid">
+        <div *ngFor="let account of creditAccounts" class="account-card credit">
+          <div class="account-header">
+            <div class="account-type-badge credit">Credit Card</div>
+            <span class="institution">{{ account.institution }}</span>
+          </div>
+          <h3>{{ account.name }}</h3>
+          <div class="balances">
+            <div class="balance-row">
+              <span class="label">Current Balance</span>
+              <span class="value negative">{{ account.currentBalance | currency }}</span>
+            </div>
+            <div *ngIf="account.availableBalance !== null" class="balance-row">
+              <span class="label">Available Credit</span>
+              <span class="value">{{ account.availableBalance | currency }}</span>
+            </div>
+            <div *ngIf="account.apr" class="balance-row">
+              <span class="label">APR</span>
+              <span class="value apr">{{ account.apr }}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="investmentAccounts.length > 0" class="account-group">
+      <h2>Investment Accounts</h2>
+      <div class="account-grid">
+        <div *ngFor="let account of investmentAccounts" class="account-card">
+          <div class="account-header">
+            <div class="account-type-badge investment">Investment</div>
+            <span class="institution">{{ account.institution }}</span>
+          </div>
+          <h3>{{ account.name }}</h3>
+          <div class="balances">
+            <div class="balance-row">
+              <span class="label">Current Balance</span>
+              <span class="value">{{ account.currentBalance | currency }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,91 @@
+<div class="calculator-page">
+  <div class="page-header">
+    <h1>Debt Payoff Calculator</h1>
+    <p class="subtitle">Calculate your optimal debt payoff strategy using the avalanche method</p>
+  </div>
+
+  <div class="calculator-form">
+    <div class="form-group">
+      <label for="monthlyPayment">Monthly Payment Amount</label>
+      <div class="input-wrapper">
+        <span class="currency-prefix">$</span>
+        <input
+          id="monthlyPayment"
+          type="number"
+          [(ngModel)]="monthlyPayment"
+          placeholder="500"
+          min="1"
+          class="payment-input"
+        />
+      </div>
+    </div>
+    <button (click)="calculate()" class="btn btn-primary" [disabled]="loading">
+      {{ loading ? 'Calculating...' : 'Calculate Strategy' }}
+    </button>
+  </div>
+
+  <div *ngIf="error" class="alert alert-error">{{ error }}</div>
+
+  <div *ngIf="strategy" class="results">
+    <div class="summary-cards">
+      <div class="stat-card">
+        <span class="stat-label">Total Debt</span>
+        <span class="stat-value negative">{{ strategy.totalDebt | currency }}</span>
+      </div>
+      <div class="stat-card" *ngIf="strategy.payoffDate">
+        <span class="stat-label">Payoff Date</span>
+        <span class="stat-value">{{ strategy.payoffDate | date: 'MMMM y' }}</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Total Interest Saved</span>
+        <span class="stat-value positive">{{ strategy.totalInterestSaved | currency }}</span>
+      </div>
+    </div>
+
+    <div *ngIf="strategy.highestAprDebt" class="next-debt">
+      <h2>Next Debt to Pay Off</h2>
+      <div class="highlight-card">
+        <div class="highlight-name">{{ strategy.highestAprDebt.name }}</div>
+        <div class="highlight-details">
+          <span>Balance: {{ strategy.highestAprDebt.balance | currency }}</span>
+          <span>APR: {{ strategy.highestAprDebt.apr }}%</span>
+        </div>
+        <p class="strategy-note">
+          Focus extra payments here first — the highest APR debt costs the most in interest.
+        </p>
+      </div>
+    </div>
+
+    <div class="avalanche-order">
+      <h2>Avalanche Payoff Order</h2>
+      <p class="description">Pay off debts in this order to minimize total interest paid.</p>
+      <div class="debt-list">
+        <div *ngFor="let item of strategy.avalancheOrder; let i = index" class="debt-item">
+          <div class="debt-rank">{{ i + 1 }}</div>
+          <div class="debt-info">
+            <span class="debt-name">{{ item.name }}</span>
+            <div class="debt-details">
+              <span>Balance: {{ item.balance | currency }}</span>
+              <span>APR: {{ item.apr }}%</span>
+            </div>
+          </div>
+          <div class="debt-payoff">
+            <span class="payoff-time">{{ formatMonths(item.monthsToPayoff) }}</span>
+            <span class="interest-paid">{{ item.interestPaid | currency }} interest</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="!strategy && !loading" class="info-box">
+    <h2>How the Avalanche Method Works</h2>
+    <ol>
+      <li>List all debts ordered by interest rate (highest to lowest)</li>
+      <li>Make minimum payments on all debts</li>
+      <li>Put all extra money toward the highest-rate debt</li>
+      <li>Once paid off, roll that payment to the next highest-rate debt</li>
+    </ol>
+    <p>This method minimizes total interest paid over time.</p>
+  </div>
+</div>

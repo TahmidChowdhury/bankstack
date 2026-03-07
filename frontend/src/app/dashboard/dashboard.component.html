@@ -1,0 +1,68 @@
+<div class="dashboard">
+  <div class="page-header">
+    <h1>Dashboard</h1>
+    <p class="subtitle">Your financial command center</p>
+  </div>
+
+  <div *ngIf="error" class="alert alert-error">{{ error }}</div>
+  <div *ngIf="loading" class="loading">Loading...</div>
+
+  <div *ngIf="!loading" class="summary-cards">
+    <div class="card card-cash">
+      <div class="card-icon">💰</div>
+      <div class="card-content">
+        <h3>Total Cash</h3>
+        <p class="amount">{{ summary.totalCash | currency }}</p>
+      </div>
+    </div>
+    <div class="card card-debt">
+      <div class="card-icon">💳</div>
+      <div class="card-content">
+        <h3>Total Debt</h3>
+        <p class="amount">{{ summary.totalDebt | currency }}</p>
+      </div>
+    </div>
+    <div class="card" [class.card-positive]="summary.netWorth >= 0" [class.card-negative]="summary.netWorth < 0">
+      <div class="card-icon">📊</div>
+      <div class="card-content">
+        <h3>Net Worth</h3>
+        <p class="amount">{{ summary.netWorth | currency }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="!loading" class="accounts-section">
+    <h2>Connected Accounts</h2>
+    <div *ngIf="accounts.length === 0" class="empty-state">
+      <p>No accounts connected yet.</p>
+      <a routerLink="/accounts" class="btn btn-primary">Connect an Account</a>
+    </div>
+
+    <div *ngIf="depositoryAccounts.length > 0">
+      <h3>Bank Accounts</h3>
+      <div class="account-list">
+        <div *ngFor="let account of depositoryAccounts" class="account-item">
+          <div class="account-info">
+            <span class="account-name">{{ account.name }}</span>
+            <span class="account-institution">{{ account.institution }}</span>
+          </div>
+          <span class="account-balance">{{ account.currentBalance | currency }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="creditAccounts.length > 0">
+      <h3>Credit Cards</h3>
+      <div class="account-list">
+        <div *ngFor="let account of creditAccounts" class="account-item">
+          <div class="account-info">
+            <span class="account-name">{{ account.name }}</span>
+            <span class="account-institution">{{ account.institution }}</span>
+            <span *ngIf="account.apr" class="account-apr">APR: {{ account.apr }}%</span>
+          </div>
+          <span class="account-balance negative">{{ account.currentBalance | currency }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
