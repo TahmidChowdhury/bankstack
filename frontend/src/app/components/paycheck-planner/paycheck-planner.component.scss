@@ -1,0 +1,151 @@
+.panel {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 8px 24px rgba(20, 28, 44, 0.06);
+
+  header {
+    margin-bottom: 10px;
+
+    h3 {
+      margin: 0;
+      color: #101828;
+      font-size: 1rem;
+    }
+
+    p {
+      margin: 4px 0 0;
+      color: #667085;
+      font-size: 0.85rem;
+    }
+  }
+}
+
+.topline {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(180px, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+
+  article {
+    border: 1px solid #eaecf0;
+    border-radius: 10px;
+    padding: 10px;
+  }
+}
+
+.label {
+  margin: 0;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #667085;
+}
+
+.value {
+  margin: 6px 0 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #067647;
+}
+
+.value.debt {
+  color: #b42318;
+}
+
+.subtext {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  color: #667085;
+}
+
+.block {
+  margin-top: 12px;
+
+  h4 {
+    margin: 0 0 8px;
+    color: #344054;
+    font-size: 0.9rem;
+  }
+
+  dl {
+    margin: 0;
+    display: grid;
+    gap: 6px;
+  }
+
+  dl div {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 0.86rem;
+    color: #1d2939;
+  }
+
+  .total {
+    font-weight: 700;
+  }
+}
+
+.minimum-cards {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 0.82rem;
+    color: #475467;
+  }
+}
+
+.card-name {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #101828;
+}
+
+.btn {
+  margin-top: 10px;
+  border: none;
+  border-radius: 8px;
+  background: #1570ef;
+  color: #fff;
+  font-weight: 600;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.simulation {
+  margin-top: 10px;
+
+  p {
+    margin: 4px 0;
+    font-size: 0.85rem;
+    color: #1d2939;
+  }
+}
+
+.progress-track {
+  margin-top: 8px;
+  height: 8px;
+  border-radius: 99px;
+  background: #e4e7ec;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1570ef, #17b26a);
+}
+
+@media (max-width: 640px) {
+  .topline {
+    grid-template-columns: 1fr;
+  }
+}

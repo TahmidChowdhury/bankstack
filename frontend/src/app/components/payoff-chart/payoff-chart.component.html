@@ -1,0 +1,11 @@
+<section class="panel">
+  <header>
+    <h3>Debt Payoff Progress</h3>
+    <p>Current balances by account</p>
+  </header>
+
+  <div class="empty" *ngIf="!creditAccounts.length">No debt accounts yet.</div>
+  <div class="chart-wrap" *ngIf="creditAccounts.length">
+    <canvas baseChart [type]="'bar'" [data]="barData" [options]="barOptions"></canvas>
+  </div>
+</section>

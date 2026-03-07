@@ -1,68 +1,61 @@
 <div class="dashboard">
-  <div class="page-header">
-    <h1>Dashboard</h1>
-    <p class="subtitle">Your financial command center</p>
-  </div>
+  <header class="page-header">
+    <div>
+      <h1>Dashboard</h1>
+      <p class="subtitle">Mint-style overview of debt, cash, income, and activity</p>
+    </div>
+    <button class="btn btn-primary" (click)="connectBank()" [disabled]="connectingBank || preparingPlaid">
+      {{ preparingPlaid ? 'Preparing...' : connectingBank ? 'Connecting...' : 'Connect Bank' }}
+    </button>
+  </header>
 
   <div *ngIf="error" class="alert alert-error">{{ error }}</div>
-  <div *ngIf="loading" class="loading">Loading...</div>
+  <div *ngIf="loading" class="loading">Loading dashboard...</div>
 
-  <div *ngIf="!loading" class="summary-cards">
-    <div class="card card-cash">
-      <div class="card-icon">💰</div>
-      <div class="card-content">
-        <h3>Total Cash</h3>
-        <p class="amount">{{ summary.totalCash | currency }}</p>
-      </div>
-    </div>
-    <div class="card card-debt">
-      <div class="card-icon">💳</div>
-      <div class="card-content">
-        <h3>Total Debt</h3>
-        <p class="amount">{{ summary.totalDebt | currency }}</p>
-      </div>
-    </div>
-    <div class="card" [class.card-positive]="summary.netWorth >= 0" [class.card-negative]="summary.netWorth < 0">
-      <div class="card-icon">📊</div>
-      <div class="card-content">
-        <h3>Net Worth</h3>
-        <p class="amount">{{ summary.netWorth | currency }}</p>
-      </div>
-    </div>
-  </div>
+  <ng-container *ngIf="!loading">
+    <app-dashboard-summary
+      [netWorth]="summary.netWorth"
+      [totalDebt]="summary.totalDebt"
+      [monthlyIncome]="income.totalMonthlyIncome"
+      [nextPaycheckAmount]="income.nextPaycheckAmount"
+      [nextPaycheckDate]="income.nextPaycheckDate"
+    />
 
-  <div *ngIf="!loading" class="accounts-section">
-    <h2>Connected Accounts</h2>
-    <div *ngIf="accounts.length === 0" class="empty-state">
-      <p>No accounts connected yet.</p>
-      <a routerLink="/accounts" class="btn btn-primary">Connect an Account</a>
-    </div>
+    <section class="metrics-strip">
+      <article>
+        <p class="label">Total Assets</p>
+        <p class="value">{{ totalAssets | currency }}</p>
+      </article>
+      <article>
+        <p class="label">Debt Utilization</p>
+        <p class="value">{{ debtUtilization | number: '1.0-0' }}%</p>
+      </article>
+      <article>
+        <p class="label">Monthly Interest (Est.)</p>
+        <p class="value">{{ totalMonthlyInterest | currency }}</p>
+      </article>
+    </section>
 
-    <div *ngIf="depositoryAccounts.length > 0">
-      <h3>Bank Accounts</h3>
-      <div class="account-list">
-        <div *ngFor="let account of depositoryAccounts" class="account-item">
-          <div class="account-info">
-            <span class="account-name">{{ account.name }}</span>
-            <span class="account-institution">{{ account.institution }}</span>
-          </div>
-          <span class="account-balance">{{ account.currentBalance | currency }}</span>
-        </div>
-      </div>
-    </div>
+    <section class="charts-grid">
+      <app-debt-chart [creditAccounts]="creditAccounts" />
+      <app-payoff-chart [creditAccounts]="creditAccounts" />
+    </section>
 
-    <div *ngIf="creditAccounts.length > 0">
-      <h3>Credit Cards</h3>
-      <div class="account-list">
-        <div *ngFor="let account of creditAccounts" class="account-item">
-          <div class="account-info">
-            <span class="account-name">{{ account.name }}</span>
-            <span class="account-institution">{{ account.institution }}</span>
-            <span *ngIf="account.apr" class="account-apr">APR: {{ account.apr }}%</span>
-          </div>
-          <span class="account-balance negative">{{ account.currentBalance | currency }}</span>
-        </div>
-      </div>
-    </div>
-  </div>
+    <section class="full-width-section">
+      <app-cashflow-forecast [forecast]="cashflowForecast" />
+    </section>
+
+    <section class="full-width-section">
+      <app-paycheck-planner [planner]="paycheckPlanner" [accounts]="accounts" />
+    </section>
+
+    <section class="full-width-section">
+      <app-accounts-table [accounts]="accounts" />
+    </section>
+
+    <section class="tables-grid">
+      <app-transactions-table [transactions]="transactions" />
+      <app-income-summary [income]="income" />
+    </section>
+  </ng-container>
 </div>

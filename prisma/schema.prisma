@@ -16,8 +16,20 @@ model User {
   createdAt DateTime @default(now())
 }
 
+model PlaidItem {
+  id          String    @id @default(cuid())
+  plaidItemId String    @unique
+  institution String
+  accessToken String
+  accounts    Account[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
 model Account {
   id               String        @id @default(cuid())
+  plaidItemId      String?
+  plaidItem        PlaidItem?    @relation(fields: [plaidItemId], references: [id], onDelete: SetNull)
   plaidAccountId   String        @unique
   name             String
   type             String
@@ -25,14 +37,18 @@ model Account {
   institution      String
   currentBalance   Float
   availableBalance Float?
+  minimumPayment   Float?
+  dueDayOfMonth    Int?
   apr              Float?
   transactions     Transaction[]
+  recurringExpenses RecurringExpense[]
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 }
 
 model Transaction {
   id           String   @id @default(cuid())
+  plaidTransactionId String? @unique
   accountId    String
   account      Account  @relation(fields: [accountId], references: [id])
   amount       Float
@@ -49,4 +65,27 @@ model BalanceSnapshot {
   totalDebt Float
   netWorth  Float
   createdAt DateTime @default(now())
+}
+
+model IncomeSource {
+  id                String   @id @default(cuid())
+  source            String   @unique
+  monthlyIncome     Float
+  perPaycheckAmount Float
+  payDays           Int[]
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model RecurringExpense {
+  id         String   @id @default(uuid())
+  name       String
+  category   String
+  amount     Float
+  dayOfMonth Int
+  accountId  String
+  account    Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([name, accountId, dayOfMonth])
 }

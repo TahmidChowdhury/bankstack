@@ -1,0 +1,32 @@
+.panel {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 8px 24px rgba(20, 28, 44, 0.06);
+
+  header {
+    margin-bottom: 12px;
+
+    h3 {
+      margin: 0;
+      font-size: 1rem;
+      color: #101828;
+    }
+
+    p {
+      margin: 4px 0 0;
+      font-size: 0.85rem;
+      color: #667085;
+    }
+  }
+}
+
+.chart-wrap {
+  height: 260px;
+}
+
+.empty {
+  color: #667085;
+  font-size: 0.9rem;
+  padding: 24px 0;
+}

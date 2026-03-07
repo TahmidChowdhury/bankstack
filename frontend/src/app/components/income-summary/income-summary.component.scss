@@ -1,0 +1,51 @@
+.panel {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 8px 24px rgba(20, 28, 44, 0.06);
+
+  header {
+    margin-bottom: 12px;
+
+    h3 {
+      margin: 0;
+      color: #101828;
+      font-size: 1rem;
+    }
+
+    p {
+      margin: 4px 0 0;
+      font-size: 0.85rem;
+      color: #667085;
+    }
+  }
+}
+
+.source-list {
+  display: grid;
+  gap: 10px;
+}
+
+.source {
+  border: 1px solid #eaecf0;
+  border-radius: 10px;
+  padding: 10px;
+
+  .source-name {
+    margin: 0;
+    font-weight: 600;
+    color: #101828;
+  }
+
+  .source-amount,
+  .source-days {
+    margin: 4px 0 0;
+    font-size: 0.85rem;
+    color: #475467;
+  }
+}
+
+.empty {
+  margin: 8px 0 0;
+  color: #667085;
+}

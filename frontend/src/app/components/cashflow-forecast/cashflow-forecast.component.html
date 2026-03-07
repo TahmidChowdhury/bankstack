@@ -1,0 +1,41 @@
+<section class="panel">
+  <header>
+    <h3>Cash Flow Forecast</h3>
+    <p>How paychecks and recurring bills change cash over the next 30 days</p>
+  </header>
+
+  <div class="top-metrics">
+    <article>
+      <p class="label">Next Paycheck</p>
+      <p class="value">{{ (forecast.nextPaycheck?.amount || 0) | currency }}</p>
+      <p class="subtext">
+        {{ forecast.nextPaycheck?.date ? (forecast.nextPaycheck?.date | date: 'MMMM d') : 'Not scheduled' }}
+      </p>
+    </article>
+
+    <article>
+      <p class="label">Net Cash Remaining After Bills</p>
+      <p class="value" [class.negative]="forecast.netCashflow < 0">
+        {{ (forecast.startingCash + forecast.netCashflow) | currency }}
+      </p>
+      <p class="subtext">Starting cash {{ forecast.startingCash | currency }}</p>
+    </article>
+  </div>
+
+  <div class="bills">
+    <h4>Upcoming Bills</h4>
+    <ul *ngIf="forecast.upcomingBills.length; else noBills">
+      <li *ngFor="let bill of forecast.upcomingBills | slice:0:6">
+        <span>{{ bill.name }}</span>
+        <span>{{ bill.amount | currency }} · {{ bill.dueDate | date: 'MMM d' }}</span>
+      </li>
+    </ul>
+    <ng-template #noBills>
+      <p class="subtext">No recurring bills in the next 30 days.</p>
+    </ng-template>
+  </div>
+
+  <div class="chart-wrap" *ngIf="forecast.projectedBalance.length">
+    <canvas baseChart [type]="'line'" [data]="lineData" [options]="lineOptions"></canvas>
+  </div>
+</section>

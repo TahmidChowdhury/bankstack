@@ -1,0 +1,21 @@
+<section class="panel">
+  <header>
+    <h3>Income Schedule</h3>
+    <p *ngIf="income.nextPaycheckDate">
+      Next paycheck: {{ income.nextPaycheckAmount | currency }} on {{ income.nextPaycheckDate | date: 'MMMM d' }}
+    </p>
+    <p *ngIf="!income.nextPaycheckDate">No paycheck schedule configured.</p>
+  </header>
+
+  <div class="source-list" *ngIf="income.sources.length; else empty">
+    <article class="source" *ngFor="let source of income.sources">
+      <p class="source-name">{{ source.source }}</p>
+      <p class="source-amount">{{ source.perPaycheckAmount | currency }} per paycheck</p>
+      <p class="source-days">Paydays: {{ source.payDays.join(' & ') }}</p>
+    </article>
+  </div>
+
+  <ng-template #empty>
+    <p class="empty">Add income sources in seed data to populate this section.</p>
+  </ng-template>
+</section>

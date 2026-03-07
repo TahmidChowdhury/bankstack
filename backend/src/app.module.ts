@@ -5,6 +5,9 @@ import { PrismaModule } from './prisma/prisma.module';
 import { PlaidModule } from './plaid/plaid.module';
 import { DebtModule } from './debt/debt.module';
 import { SnapshotModule } from './snapshot/snapshot.module';
+import { IncomeModule } from './income/income.module';
+import { CashflowModule } from './cashflow/cashflow.module';
+import { PaycheckModule } from './paycheck/paycheck.module';
 
 @Module({
   imports: [
@@ -14,6 +17,9 @@ import { SnapshotModule } from './snapshot/snapshot.module';
     PlaidModule,
     DebtModule,
     SnapshotModule,
+    IncomeModule,
+    CashflowModule,
+    PaycheckModule,
   ],
 })
 export class AppModule {}
