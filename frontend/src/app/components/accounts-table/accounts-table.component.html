@@ -1,0 +1,35 @@
+<section class="panel">
+  <header>
+    <h3>Accounts</h3>
+    <p>All connected account balances</p>
+  </header>
+
+  <div class="table-wrap" *ngIf="accounts.length; else empty">
+    <table>
+      <thead>
+        <tr>
+          <th>Account</th>
+          <th>Institution</th>
+          <th>Balance</th>
+          <th>Credit Limit</th>
+          <th>APR</th>
+          <th>Utilization</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let account of accounts">
+          <td>{{ account.name }}</td>
+          <td>{{ account.institution }}</td>
+          <td [class.debt]="account.type === 'credit'">{{ account.currentBalance | currency }}</td>
+          <td>{{ creditLimit(account) == null ? '—' : (creditLimit(account) | currency) }}</td>
+          <td>{{ account.apr == null ? '—' : (account.apr | number: '1.2-2') + '%' }}</td>
+          <td>{{ utilization(account) == null ? '—' : (utilization(account) | number: '1.0-0') + '%' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <ng-template #empty>
+    <p class="empty">No accounts connected yet.</p>
+  </ng-template>
+</section>

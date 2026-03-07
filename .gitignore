@@ -24,3 +24,6 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+
+# Local seed data (contains private financial data)
+backend/prisma/seed-data.json

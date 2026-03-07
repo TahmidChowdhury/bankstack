@@ -1,0 +1,11 @@
+<section class="panel">
+  <header>
+    <h3>Debt Breakdown</h3>
+    <p>Debt by account</p>
+  </header>
+
+  <div class="empty" *ngIf="!creditAccounts.length">No debt accounts yet.</div>
+  <div class="chart-wrap" *ngIf="creditAccounts.length">
+    <canvas baseChart [type]="'doughnut'" [data]="doughnutData" [options]="doughnutOptions"></canvas>
+  </div>
+</section>

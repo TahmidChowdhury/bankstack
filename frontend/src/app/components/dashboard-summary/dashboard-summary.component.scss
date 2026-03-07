@@ -1,0 +1,54 @@
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.summary-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 8px 24px rgba(20, 28, 44, 0.06);
+
+  .label {
+    margin: 0 0 8px;
+    color: #677085;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .value {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0f1728;
+
+    &.negative,
+    &.debt {
+      color: #b42318;
+    }
+
+    &.income {
+      color: #067647;
+    }
+  }
+
+  .subtext {
+    margin: 6px 0 0;
+    font-size: 0.85rem;
+    color: #677085;
+  }
+}
+
+@media (max-width: 1024px) {
+  .summary-grid {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,23 @@
+<section class="summary-grid">
+  <article class="summary-card">
+    <p class="label">Net Worth</p>
+    <p class="value" [class.negative]="netWorth < 0">{{ netWorth | currency }}</p>
+  </article>
+
+  <article class="summary-card">
+    <p class="label">Total Debt</p>
+    <p class="value debt">{{ totalDebt | currency }}</p>
+  </article>
+
+  <article class="summary-card">
+    <p class="label">Monthly Income</p>
+    <p class="value income">{{ monthlyIncome | currency }}</p>
+  </article>
+
+  <article class="summary-card">
+    <p class="label">Next Paycheck</p>
+    <p class="value income">{{ nextPaycheckAmount | currency }}</p>
+    <p class="subtext" *ngIf="nextPaycheckDate">{{ nextPaycheckDate | date: 'MMMM d' }}</p>
+    <p class="subtext" *ngIf="!nextPaycheckDate">Not scheduled</p>
+  </article>
+</section>

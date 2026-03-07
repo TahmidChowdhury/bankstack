@@ -11,6 +11,8 @@ export interface Account {
   institution: string;
   currentBalance: number;
   availableBalance: number | null;
+  minimumPayment: number | null;
+  dueDayOfMonth: number | null;
   apr: number | null;
   createdAt: string;
   updatedAt: string;
@@ -58,6 +60,73 @@ export interface PayoffStrategy {
   monthlyPayment: number;
 }
 
+export interface IncomeSource {
+  id: string;
+  source: string;
+  monthlyIncome: number;
+  perPaycheckAmount: number;
+  payDays: number[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface IncomeSummary {
+  totalMonthlyIncome: number;
+  nextPaycheckDate: string | null;
+  nextPaycheckAmount: number;
+  sources: IncomeSource[];
+}
+
+export interface CashflowPoint {
+  date: string;
+  balance: number;
+}
+
+export interface CashflowForecast {
+  incomeNext30Days: number;
+  expensesNext30Days: number;
+  netCashflow: number;
+  upcomingBills: Array<{
+    name: string;
+    amount: number;
+    dueDate: string;
+  }>;
+  nextPaycheck: {
+    date: string;
+    amount: number;
+  } | null;
+  startingCash: number;
+  projectedBalance: CashflowPoint[];
+}
+
+export interface PaycheckPlanner {
+  nextPaycheckAmount: number;
+  paycheckDate: string | null;
+  requiredPayments: {
+    recurringBills: number;
+    creditCardMinimums: number;
+    totalRequired: number;
+    minimumPaymentCards: Array<{
+      accountName: string;
+      amount: number;
+      dueDayOfMonth: number;
+    }>;
+  };
+  suggestedAllocation: {
+    recurringBills: number;
+    creditCardMinimums: number;
+    livingExpenses: number;
+    extraDebtPayment: number;
+    remainingBuffer: number;
+  };
+  recommendedCard: {
+    accountId: string;
+    accountName: string;
+    apr: number;
+    currentBalance: number;
+  } | null;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -79,6 +148,22 @@ export class ApiService {
 
   getDebtSummary(): Observable<DebtSummary> {
     return this.http.get<DebtSummary>(`${this.baseUrl}/debt/summary`);
+  }
+
+  getIncomeSummary(): Observable<IncomeSummary> {
+    return this.http.get<IncomeSummary>(`${this.baseUrl}/income/summary`);
+  }
+
+  getIncome(): Observable<IncomeSummary> {
+    return this.http.get<IncomeSummary>(`${this.baseUrl}/income`);
+  }
+
+  getCashflowForecast(): Observable<CashflowForecast> {
+    return this.http.get<CashflowForecast>(`${this.baseUrl}/cashflow/forecast`);
+  }
+
+  getPaycheckPlanner(): Observable<PaycheckPlanner> {
+    return this.http.get<PaycheckPlanner>(`${this.baseUrl}/paycheck/planner`);
   }
 
   calculatePayoffStrategy(monthlyPayment: number): Observable<PayoffStrategy> {
