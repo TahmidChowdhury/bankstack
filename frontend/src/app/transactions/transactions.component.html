@@ -1,0 +1,49 @@
+<div class="transactions-page">
+  <div class="page-header">
+    <h1>Transactions</h1>
+    <p class="subtitle">Recent transaction history</p>
+  </div>
+
+  <div class="filters">
+    <label for="accountFilter">Filter by Account:</label>
+    <select
+      id="accountFilter"
+      [(ngModel)]="selectedAccountId"
+      (change)="onAccountFilterChange()"
+      class="filter-select"
+    >
+      <option value="">All Accounts</option>
+      <option *ngFor="let account of accounts" [value]="account.id">
+        {{ account.name }} ({{ account.institution }})
+      </option>
+    </select>
+  </div>
+
+  <div *ngIf="error" class="alert alert-error">{{ error }}</div>
+  <div *ngIf="loading" class="loading">Loading transactions...</div>
+
+  <div *ngIf="!loading">
+    <div *ngIf="transactions.length === 0" class="empty-state">
+      <div class="empty-icon">📋</div>
+      <h2>No Transactions Found</h2>
+      <p>Transaction history will appear here once your accounts are connected.</p>
+    </div>
+
+    <div *ngIf="transactions.length > 0" class="transaction-list">
+      <div *ngFor="let txn of transactions" class="transaction-item">
+        <div class="txn-icon">{{ getCategoryIcon(txn.category) }}</div>
+        <div class="txn-info">
+          <span class="txn-merchant">{{ txn.merchantName || txn.description || 'Transaction' }}</span>
+          <span class="txn-meta">
+            {{ txn.account.name }} · {{ txn.date | date: 'MMM d, y' }}
+          </span>
+          <span *ngIf="txn.category" class="txn-category">{{ txn.category }}</span>
+        </div>
+        <div class="txn-amount" [class.positive]="txn.amount < 0" [class.negative]="txn.amount > 0">
+          {{ (txn.amount < 0 ? -txn.amount : txn.amount) | currency }}
+          <span class="amount-sign">{{ txn.amount < 0 ? '+' : '-' }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
