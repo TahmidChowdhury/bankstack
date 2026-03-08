@@ -36,26 +36,81 @@
       </article>
     </section>
 
-    <section class="charts-grid">
-      <app-debt-chart [creditAccounts]="creditAccounts" />
-      <app-payoff-chart [creditAccounts]="creditAccounts" />
+    <section class="dashboard-tabs">
+      <button
+        type="button"
+        class="tab-button"
+        [class.active]="activeTab === 'overview'"
+        (click)="setActiveTab('overview')"
+      >
+        Overview
+      </button>
+      <button
+        type="button"
+        class="tab-button"
+        [class.active]="activeTab === 'calendar'"
+        (click)="setActiveTab('calendar')"
+      >
+        Calendar
+      </button>
     </section>
 
-    <section class="full-width-section">
-      <app-cashflow-forecast [forecast]="cashflowForecast" />
-    </section>
+    <ng-container *ngIf="activeTab === 'overview'">
+      <section class="charts-grid">
+        <app-debt-chart [creditAccounts]="creditAccounts" />
+        <app-payoff-chart [creditAccounts]="creditAccounts" />
+      </section>
 
-    <section class="full-width-section">
-      <app-paycheck-planner [planner]="paycheckPlanner" [accounts]="accounts" />
-    </section>
+      <section class="full-width-section">
+        <app-cashflow-forecast [forecast]="cashflowForecast" />
+      </section>
 
-    <section class="full-width-section">
-      <app-accounts-table [accounts]="accounts" />
-    </section>
+      <section class="full-width-section">
+        <app-paycheck-planner [planner]="paycheckPlanner" [accounts]="accounts" />
+      </section>
 
-    <section class="tables-grid">
-      <app-transactions-table [transactions]="transactions" />
-      <app-income-summary [income]="income" />
+      <section class="full-width-section">
+        <app-accounts-table [accounts]="accounts" />
+      </section>
+
+      <section class="tables-grid">
+        <app-transactions-table [transactions]="transactions" />
+        <app-income-summary [income]="income" />
+      </section>
+    </ng-container>
+
+    <section class="calendar-panel" *ngIf="activeTab === 'calendar'">
+      <header class="calendar-header">
+        <h3>{{ currentMonthLabel }} Bill Calendar</h3>
+        <p>Total due this month: {{ monthlyDueTotal | currency }}</p>
+      </header>
+
+      <div class="weekday-grid">
+        <span *ngFor="let day of weekDays">{{ day }}</span>
+      </div>
+
+      <div class="calendar-grid">
+        <article
+          class="calendar-cell"
+          *ngFor="let cell of calendarCells"
+          [class.empty]="!cell.date"
+          [class.today]="cell.isToday"
+          [class.has-bills]="cell.bills.length"
+        >
+          <ng-container *ngIf="cell.date">
+            <p class="day-number">{{ cell.dayOfMonth }}</p>
+            <ul class="due-list" *ngIf="cell.bills.length; else noDueBills">
+              <li *ngFor="let bill of cell.bills" [class.payday]="bill.kind === 'payday'">
+                <span class="item-name">{{ bill.name }}</span>
+                <span class="item-amount">{{ bill.kind === 'payday' ? '+' : '-' }}{{ bill.amount | currency }}</span>
+              </li>
+            </ul>
+            <ng-template #noDueBills>
+              <p class="no-due">No scheduled items</p>
+            </ng-template>
+          </ng-container>
+        </article>
+      </div>
     </section>
   </ng-container>
 </div>

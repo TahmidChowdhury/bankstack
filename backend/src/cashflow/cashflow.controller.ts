@@ -9,4 +9,9 @@ export class CashflowController {
   async getForecast() {
     return this.cashflowService.getForecast();
   }
+
+  @Get('recurring-expenses')
+  async getRecurringExpenses() {
+    return this.cashflowService.getRecurringExpenses();
+  }
 }

@@ -8,6 +8,7 @@ import {
   DebtSummary,
   IncomeSummary,
   PaycheckPlanner,
+  RecurringExpenseDay,
   Transaction,
 } from '../services/api.service';
 import { PlaidLinkService } from '../services/plaid-link.service';
@@ -19,6 +20,20 @@ import { TransactionsTableComponent } from '../components/transactions-table/tra
 import { IncomeSummaryComponent } from '../components/income-summary/income-summary.component';
 import { CashflowForecastComponent } from '../components/cashflow-forecast/cashflow-forecast.component';
 import { PaycheckPlannerComponent } from '../components/paycheck-planner/paycheck-planner.component';
+
+type CalendarBill = {
+  name: string;
+  amount: number;
+  dueDate: string;
+  kind: 'card_due' | 'recurring_expense' | 'payday';
+};
+
+type CalendarCell = {
+  date: Date | null;
+  dayOfMonth: number | null;
+  isToday: boolean;
+  bills: CalendarBill[];
+};
 
 @Component({
   selector: 'app-dashboard',
@@ -38,6 +53,7 @@ import { PaycheckPlannerComponent } from '../components/paycheck-planner/paychec
   styleUrl: './dashboard.component.scss',
 })
 export class DashboardComponent implements OnInit {
+  readonly weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   summary: DebtSummary = { totalDebt: 0, totalCash: 0, netWorth: 0 };
   income: IncomeSummary = {
     totalMonthlyIncome: 0,
@@ -74,9 +90,11 @@ export class DashboardComponent implements OnInit {
   };
   accounts: Account[] = [];
   transactions: Transaction[] = [];
+  recurringExpenses: RecurringExpenseDay[] = [];
   loading = true;
   preparingPlaid = false;
   connectingBank = false;
+  activeTab: 'overview' | 'calendar' = 'overview';
   error: string | null = null;
 
   constructor(
@@ -99,14 +117,24 @@ export class DashboardComponent implements OnInit {
       income: this.api.getIncome(),
       cashflowForecast: this.api.getCashflowForecast(),
       paycheckPlanner: this.api.getPaycheckPlanner(),
+      recurringExpenses: this.api.getRecurringExpenses(),
     }).subscribe({
-      next: ({ summary, accounts, transactions, income, cashflowForecast, paycheckPlanner }) => {
+      next: ({
+        summary,
+        accounts,
+        transactions,
+        income,
+        cashflowForecast,
+        paycheckPlanner,
+        recurringExpenses,
+      }) => {
         this.summary = summary;
         this.accounts = accounts;
         this.transactions = transactions.slice(0, 10);
         this.income = income;
         this.cashflowForecast = cashflowForecast;
         this.paycheckPlanner = paycheckPlanner;
+        this.recurringExpenses = recurringExpenses;
         this.loading = false;
       },
       error: (err) => {
@@ -156,6 +184,60 @@ export class DashboardComponent implements OnInit {
     }
 
     return (totalUsed / totalLimit) * 100;
+  }
+
+  get currentMonthLabel(): string {
+    const monthStart = this.currentMonthStart();
+    return monthStart.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  }
+
+  get monthlyDueTotal(): number {
+    return this.currentMonthBills
+      .filter((bill) => bill.kind !== 'payday')
+      .reduce((sum, bill) => sum + bill.amount, 0);
+  }
+
+  get calendarCells(): CalendarCell[] {
+    const monthStart = this.currentMonthStart();
+    const year = monthStart.getFullYear();
+    const month = monthStart.getMonth();
+    const firstWeekday = monthStart.getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const today = this.startOfDay(new Date());
+
+    const billsByDay = new Map<number, CalendarBill[]>();
+    for (const bill of this.currentMonthBills) {
+      const day = this.parseLocalDate(bill.dueDate).getDate();
+      const existing = billsByDay.get(day) ?? [];
+      existing.push(bill);
+      billsByDay.set(day, existing);
+    }
+
+    const cells: CalendarCell[] = [];
+
+    for (let i = 0; i < firstWeekday; i++) {
+      cells.push({ date: null, dayOfMonth: null, isToday: false, bills: [] });
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(year, month, day);
+      cells.push({
+        date,
+        dayOfMonth: day,
+        isToday: date.getTime() === today.getTime(),
+        bills: billsByDay.get(day) ?? [],
+      });
+    }
+
+    while (cells.length % 7 !== 0) {
+      cells.push({ date: null, dayOfMonth: null, isToday: false, bills: [] });
+    }
+
+    return cells;
+  }
+
+  setActiveTab(tab: 'overview' | 'calendar'): void {
+    this.activeTab = tab;
   }
 
   async connectBank(): Promise<void> {
@@ -208,5 +290,80 @@ export class DashboardComponent implements OnInit {
     } finally {
       this.connectingBank = false;
     }
+  }
+
+  private get currentMonthBills(): CalendarBill[] {
+    const monthStart = this.currentMonthStart();
+    const year = monthStart.getFullYear();
+    const month = monthStart.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const accountDueBills: CalendarBill[] = this.accounts
+      .filter((account) => account.type === 'credit' && account.dueDayOfMonth != null)
+      .map((account) => {
+        const day = Math.min(Math.max(account.dueDayOfMonth ?? 1, 1), daysInMonth);
+        const dueDate = this.formatLocalDate(new Date(year, month, day));
+        return {
+          name: `${account.name} payment due`,
+          amount: Math.max(account.minimumPayment ?? 0, 0),
+          dueDate,
+          kind: 'card_due',
+        };
+      });
+
+    const recurringBills: CalendarBill[] = this.recurringExpenses.map((expense) => {
+      const day = Math.min(Math.max(expense.dayOfMonth, 1), daysInMonth);
+      const dueDate = this.formatLocalDate(new Date(year, month, day));
+      return {
+        name: expense.name,
+        amount: Math.max(expense.amount, 0),
+        dueDate,
+        kind: 'recurring_expense',
+      };
+    });
+
+    const paydayItems: CalendarBill[] = this.income.sources.flatMap((source) =>
+      source.payDays.map((payDay) => {
+        const day = Math.min(Math.max(Math.floor(payDay), 1), daysInMonth);
+        const dueDate = this.formatLocalDate(new Date(year, month, day));
+        return {
+          name: `${source.source} payday`,
+          amount: Math.max(source.perPaycheckAmount, 0),
+          dueDate,
+          kind: 'payday' as const,
+        };
+      }),
+    );
+
+    return [...accountDueBills, ...recurringBills, ...paydayItems].sort((a, b) => {
+      if (a.dueDate !== b.dueDate) {
+        return a.dueDate.localeCompare(b.dueDate);
+      }
+      if (a.kind !== b.kind) {
+        return a.kind.localeCompare(b.kind);
+      }
+      return a.name.localeCompare(b.name);
+    });
+  }
+
+  private currentMonthStart(): Date {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  }
+
+  private parseLocalDate(value: string): Date {
+    const [year, month, day] = value.split('-').map((part) => Number(part));
+    return new Date(year, (month || 1) - 1, day || 1);
+  }
+
+  private formatLocalDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private startOfDay(date: Date): Date {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
   }
 }

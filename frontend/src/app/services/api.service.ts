@@ -99,6 +99,13 @@ export interface CashflowForecast {
   projectedBalance: CashflowPoint[];
 }
 
+export interface RecurringExpenseDay {
+  name: string;
+  category: string;
+  amount: number;
+  dayOfMonth: number;
+}
+
 export interface PaycheckPlanner {
   nextPaycheckAmount: number;
   paycheckDate: string | null;
@@ -160,6 +167,10 @@ export class ApiService {
 
   getCashflowForecast(): Observable<CashflowForecast> {
     return this.http.get<CashflowForecast>(`${this.baseUrl}/cashflow/forecast`);
+  }
+
+  getRecurringExpenses(): Observable<RecurringExpenseDay[]> {
+    return this.http.get<RecurringExpenseDay[]>(`${this.baseUrl}/cashflow/recurring-expenses`);
   }
 
   getPaycheckPlanner(): Observable<PaycheckPlanner> {

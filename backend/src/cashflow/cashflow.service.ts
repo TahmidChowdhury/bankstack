@@ -12,9 +12,35 @@ type UpcomingBill = {
   dueDate: string;
 };
 
+type RecurringExpenseDay = {
+  name: string;
+  category: string;
+  amount: number;
+  dayOfMonth: number;
+};
+
 @Injectable()
 export class CashflowService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async getRecurringExpenses(): Promise<RecurringExpenseDay[]> {
+    const expenses = await this.prisma.recurringExpense.findMany({
+      select: {
+        name: true,
+        category: true,
+        amount: true,
+        dayOfMonth: true,
+      },
+      orderBy: [{ dayOfMonth: 'asc' }, { name: 'asc' }],
+    });
+
+    return expenses.map((expense) => ({
+      name: expense.name,
+      category: expense.category,
+      amount: Number(expense.amount.toFixed(2)),
+      dayOfMonth: expense.dayOfMonth,
+    }));
+  }
 
   async getForecast() {
     const today = this.startOfDay(new Date());
