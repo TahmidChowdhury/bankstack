@@ -18,6 +18,7 @@ export class CashflowForecastComponent implements OnChanges {
     netCashflow: 0,
     upcomingBills: [],
     nextPaycheck: null,
+    plannedPayments: [],
     startingCash: 0,
     projectedBalance: [],
   };

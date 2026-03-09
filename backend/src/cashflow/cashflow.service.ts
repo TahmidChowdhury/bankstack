@@ -19,6 +19,16 @@ type RecurringExpenseDay = {
   dayOfMonth: number;
 };
 
+type PlannedPaymentPoint = {
+  id: string;
+  accountName: string;
+  amount: number;
+  date: string;
+  source: string | null;
+  strategy: string | null;
+  status: string;
+};
+
 @Injectable()
 export class CashflowService {
   constructor(private readonly prisma: PrismaService) {}
@@ -47,11 +57,29 @@ export class CashflowService {
     const horizonDays = 30;
     const end = this.addDays(today, horizonDays - 1);
 
-    const [incomeSources, recurringExpenses, accounts] = await Promise.all([
+    const [incomeSources, recurringExpenses, accounts, plannedPayments] = await Promise.all([
       this.prisma.incomeSource.findMany(),
       this.prisma.recurringExpense.findMany(),
       this.prisma.account.findMany({
         where: { type: 'depository' },
+      }),
+      this.prisma.plannedPayment.findMany({
+        where: {
+          status: {
+            in: ['PLANNED', 'planned'],
+          },
+          date: {
+            gte: today,
+            lte: end,
+          },
+        },
+        include: {
+          account: {
+            select: {
+              name: true,
+            },
+          },
+        },
       }),
     ]);
 
@@ -84,7 +112,9 @@ export class CashflowService {
     }
 
     const incomeNext30Days = paychecks.reduce((sum, item) => sum + item.amount, 0);
-    const expensesNext30Days = upcomingBills.reduce((sum, bill) => sum + bill.amount, 0);
+    const plannedPaymentTotal = plannedPayments.reduce((sum, item) => sum + item.amount, 0);
+    const expensesNext30Days =
+      upcomingBills.reduce((sum, bill) => sum + bill.amount, 0) + plannedPaymentTotal;
     const netCashflow = incomeNext30Days - expensesNext30Days;
 
     paychecks.sort((a, b) => a.date.localeCompare(b.date));
@@ -99,6 +129,22 @@ export class CashflowService {
     for (const bill of upcomingBills) {
       dailyDelta.set(bill.dueDate, (dailyDelta.get(bill.dueDate) ?? 0) - bill.amount);
     }
+    for (const plannedPayment of plannedPayments) {
+      const key = this.formatDate(plannedPayment.date);
+      dailyDelta.set(key, (dailyDelta.get(key) ?? 0) - plannedPayment.amount);
+    }
+
+    const projectionPlannedPayments: PlannedPaymentPoint[] = plannedPayments
+      .map((item) => ({
+        id: item.id,
+        accountName: item.account.name,
+        amount: Number(item.amount.toFixed(2)),
+        date: this.formatDate(item.date),
+        source: item.source,
+        strategy: item.strategy,
+        status: item.status,
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date));
 
     const projectedBalance = [];
     let runningBalance = startingCash;
@@ -117,6 +163,7 @@ export class CashflowService {
       expensesNext30Days: Number(expensesNext30Days.toFixed(2)),
       netCashflow: Number(netCashflow.toFixed(2)),
       upcomingBills,
+      plannedPayments: projectionPlannedPayments,
       nextPaycheck,
       startingCash: Number(startingCash.toFixed(2)),
       projectedBalance,

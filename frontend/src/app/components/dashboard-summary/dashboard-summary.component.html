@@ -20,4 +20,10 @@
     <p class="subtext" *ngIf="nextPaycheckDate">{{ nextPaycheckDate | date: 'MMMM d' }}</p>
     <p class="subtext" *ngIf="!nextPaycheckDate">Not scheduled</p>
   </article>
+
+  <article class="summary-card">
+    <p class="label">Planned Payments (30d)</p>
+    <p class="value debt">{{ plannedPaymentsTotal | currency }}</p>
+    <p class="subtext">{{ plannedPaymentsCount }} scheduled</p>
+  </article>
 </section>

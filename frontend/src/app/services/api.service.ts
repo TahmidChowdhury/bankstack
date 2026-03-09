@@ -60,6 +60,29 @@ export interface PayoffStrategy {
   monthlyPayment: number;
 }
 
+export interface DebtPlanPayment {
+  accountId: string;
+  accountName: string;
+  amount: number;
+  minimumPayment: number;
+  paymentDate: string;
+  dueDate: string | null;
+  remainingBalance: number;
+}
+
+export interface DebtPlanMonth {
+  month: string;
+  payments: DebtPlanPayment[];
+}
+
+export interface DebtPlanResponse {
+  payoffDate: string | null;
+  totalInterest: number;
+  monthsRemaining: number | null;
+  interestSavedVsMinimumOnly: number;
+  monthlyPlan: DebtPlanMonth[];
+}
+
 export interface IncomeSource {
   id: string;
   source: string;
@@ -95,6 +118,15 @@ export interface CashflowForecast {
     date: string;
     amount: number;
   } | null;
+  plannedPayments: Array<{
+    id: string;
+    accountName: string;
+    amount: number;
+    date: string;
+    source: string | null;
+    strategy: string | null;
+    status: string;
+  }>;
   startingCash: number;
   projectedBalance: CashflowPoint[];
 }
@@ -181,6 +213,12 @@ export class ApiService {
     return this.http.post<PayoffStrategy>(`${this.baseUrl}/debt/payoff-strategy`, {
       monthlyPayment,
     });
+  }
+
+  getDebtPlan(strategy: 'avalanche' | 'snowball', months: number): Observable<DebtPlanResponse> {
+    return this.http.get<DebtPlanResponse>(
+      `${this.baseUrl}/debt/plan?strategy=${strategy}&months=${months}`,
+    );
   }
 
   createLinkToken(userId: string): Observable<{ link_token: string }> {

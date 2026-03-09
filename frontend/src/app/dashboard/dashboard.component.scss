@@ -215,7 +215,25 @@
 
   .item-name {
     min-width: 0;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
+  }
+
+  .est-badge {
+    grid-column: 1 / -1;
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 6px;
+    border-radius: 999px;
+    margin-top: 2px;
+    color: #ca8504;
+    background: #fff8eb;
+    border: 1px solid #f7d9a3;
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
   }
 
   .item-amount {
@@ -228,6 +246,16 @@
     background: #ecfdf3;
     border-color: #abefc6;
     color: #067647;
+  }
+
+  li.planned-payment {
+    background: #eff4ff;
+    border-color: #c7d7fe;
+    color: #1d4ed8;
+  }
+
+  li.estimated .item-amount {
+    color: #ca8504;
   }
 }
 

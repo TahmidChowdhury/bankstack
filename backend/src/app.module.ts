@@ -8,6 +8,7 @@ import { SnapshotModule } from './snapshot/snapshot.module';
 import { IncomeModule } from './income/income.module';
 import { CashflowModule } from './cashflow/cashflow.module';
 import { PaycheckModule } from './paycheck/paycheck.module';
+import { PlannedPaymentsModule } from './planned-payments/planned-payments.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { PaycheckModule } from './paycheck/paycheck.module';
     IncomeModule,
     CashflowModule,
     PaycheckModule,
+    PlannedPaymentsModule,
   ],
 })
 export class AppModule {}

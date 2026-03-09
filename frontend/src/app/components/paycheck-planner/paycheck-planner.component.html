@@ -48,7 +48,10 @@
     <p class="card-name">{{ card.accountName }}</p>
     <p class="subtext">APR {{ card.apr | number: '1.2-2' }}% · Balance {{ card.currentBalance | currency }}</p>
 
-    <button class="btn" type="button" (click)="simulateExtraPayment()">Simulate Extra Payment</button>
+    <button class="btn" type="button" (click)="applyPaymentSimulation()" [disabled]="applyingSimulation">
+      {{ applyingSimulation ? 'Saving...' : 'Apply Payment Simulation' }}
+    </button>
+    <p class="subtext" *ngIf="applyMessage">{{ applyMessage }}</p>
 
     <div class="simulation" *ngIf="simulation">
       <p>Interest Saved: <strong>{{ simulation.interestSaved | currency }}</strong></p>

@@ -41,6 +41,7 @@ model Account {
   apr              Float?
   transactions     Transaction[]
   recurringExpenses RecurringExpense[]
+  plannedPayments  PlannedPayment[]
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 }
@@ -87,4 +88,17 @@ model RecurringExpense {
   createdAt  DateTime @default(now())
 
   @@unique([name, accountId, dayOfMonth])
+}
+
+model PlannedPayment {
+  id        String   @id @default(uuid())
+  accountId String
+  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  amount    Float
+  date      DateTime
+  type      String
+  source    String?
+  strategy  String?
+  status    String   @default("PLANNED")
+  createdAt DateTime @default(now())
 }

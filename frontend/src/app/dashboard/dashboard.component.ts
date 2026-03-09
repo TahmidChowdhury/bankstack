@@ -11,6 +11,7 @@ import {
   RecurringExpenseDay,
   Transaction,
 } from '../services/api.service';
+import { PlannedPayment, PlannedPaymentsService } from '../services/planned-payments.service';
 import { PlaidLinkService } from '../services/plaid-link.service';
 import { DashboardSummaryComponent } from '../components/dashboard-summary/dashboard-summary.component';
 import { DebtChartComponent } from '../components/debt-chart/debt-chart.component';
@@ -25,7 +26,8 @@ type CalendarBill = {
   name: string;
   amount: number;
   dueDate: string;
-  kind: 'card_due' | 'recurring_expense' | 'payday';
+  kind: 'card_due' | 'recurring_expense' | 'payday' | 'planned_payment';
+  isEstimated?: boolean;
 };
 
 type CalendarCell = {
@@ -67,6 +69,7 @@ export class DashboardComponent implements OnInit {
     netCashflow: 0,
     upcomingBills: [],
     nextPaycheck: null,
+    plannedPayments: [],
     startingCash: 0,
     projectedBalance: [],
   };
@@ -91,6 +94,7 @@ export class DashboardComponent implements OnInit {
   accounts: Account[] = [];
   transactions: Transaction[] = [];
   recurringExpenses: RecurringExpenseDay[] = [];
+  plannedPayments: PlannedPayment[] = [];
   loading = true;
   preparingPlaid = false;
   connectingBank = false;
@@ -99,6 +103,7 @@ export class DashboardComponent implements OnInit {
 
   constructor(
     private api: ApiService,
+    private plannedPaymentsService: PlannedPaymentsService,
     private plaidLinkService: PlaidLinkService,
   ) {}
 
@@ -118,6 +123,7 @@ export class DashboardComponent implements OnInit {
       cashflowForecast: this.api.getCashflowForecast(),
       paycheckPlanner: this.api.getPaycheckPlanner(),
       recurringExpenses: this.api.getRecurringExpenses(),
+      plannedPayments: this.plannedPaymentsService.list(),
     }).subscribe({
       next: ({
         summary,
@@ -127,6 +133,7 @@ export class DashboardComponent implements OnInit {
         cashflowForecast,
         paycheckPlanner,
         recurringExpenses,
+        plannedPayments,
       }) => {
         this.summary = summary;
         this.accounts = accounts;
@@ -135,6 +142,7 @@ export class DashboardComponent implements OnInit {
         this.cashflowForecast = cashflowForecast;
         this.paycheckPlanner = paycheckPlanner;
         this.recurringExpenses = recurringExpenses;
+        this.plannedPayments = plannedPayments;
         this.loading = false;
       },
       error: (err) => {
@@ -195,6 +203,27 @@ export class DashboardComponent implements OnInit {
     return this.currentMonthBills
       .filter((bill) => bill.kind !== 'payday')
       .reduce((sum, bill) => sum + bill.amount, 0);
+  }
+
+  get plannedPaymentsNext30Days(): number {
+    const today = this.startOfDay(new Date());
+    const end = new Date(today);
+    end.setDate(end.getDate() + 29);
+
+    return this.plannedPayments
+      .filter((payment) => {
+        const date = this.parseLocalDate(payment.date);
+        return date >= today && date <= end && this.isPlannedStatus(payment.status);
+      })
+      .reduce((sum, payment) => sum + payment.amount, 0);
+  }
+
+  get plannedPaymentsCount(): number {
+    return this.plannedPayments.filter((payment) => this.isPlannedStatus(payment.status)).length;
+  }
+
+  onPlannedPaymentsChanged(): void {
+    this.loadData();
   }
 
   get calendarCells(): CalendarCell[] {
@@ -303,11 +332,16 @@ export class DashboardComponent implements OnInit {
       .map((account) => {
         const day = Math.min(Math.max(account.dueDayOfMonth ?? 1, 1), daysInMonth);
         const dueDate = this.formatLocalDate(new Date(year, month, day));
+        const hasSeededMinimum = (account.minimumPayment ?? 0) > 0;
+        const fallbackMinimum = Math.max(account.currentBalance * 0.03, 0);
         return {
           name: `${account.name} payment due`,
-          amount: Math.max(account.minimumPayment ?? 0, 0),
+          amount: hasSeededMinimum
+            ? Math.max(account.minimumPayment ?? 0, 0)
+            : Number(fallbackMinimum.toFixed(2)),
           dueDate,
           kind: 'card_due',
+          isEstimated: !hasSeededMinimum,
         };
       });
 
@@ -335,15 +369,26 @@ export class DashboardComponent implements OnInit {
       }),
     );
 
-    return [...accountDueBills, ...recurringBills, ...paydayItems].sort((a, b) => {
-      if (a.dueDate !== b.dueDate) {
-        return a.dueDate.localeCompare(b.dueDate);
-      }
-      if (a.kind !== b.kind) {
-        return a.kind.localeCompare(b.kind);
-      }
-      return a.name.localeCompare(b.name);
-    });
+    const plannedPaymentItems: CalendarBill[] = this.plannedPayments
+      .filter((payment) => this.isPlannedStatus(payment.status))
+      .map((payment) => ({
+        name: `Planned: ${payment.accountName}`,
+        amount: Math.max(payment.amount, 0),
+        dueDate: payment.date,
+        kind: 'planned_payment' as const,
+      }));
+
+    return [...accountDueBills, ...recurringBills, ...paydayItems, ...plannedPaymentItems].sort(
+      (a, b) => {
+        if (a.dueDate !== b.dueDate) {
+          return a.dueDate.localeCompare(b.dueDate);
+        }
+        if (a.kind !== b.kind) {
+          return a.kind.localeCompare(b.kind);
+        }
+        return a.name.localeCompare(b.name);
+      },
+    );
   }
 
   private currentMonthStart(): Date {
@@ -354,6 +399,10 @@ export class DashboardComponent implements OnInit {
   private parseLocalDate(value: string): Date {
     const [year, month, day] = value.split('-').map((part) => Number(part));
     return new Date(year, (month || 1) - 1, day || 1);
+  }
+
+  private isPlannedStatus(status: string): boolean {
+    return status.toUpperCase() === 'PLANNED';
   }
 
   private formatLocalDate(date: Date): string {

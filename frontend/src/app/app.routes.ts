@@ -28,4 +28,8 @@ export const routes: Routes = [
         (m) => m.PayoffCalculatorComponent,
       ),
   },
+  {
+    path: 'debt-plan',
+    loadComponent: () => import('./debt-plan/debt-plan.component').then((m) => m.DebtPlanComponent),
+  },
 ];

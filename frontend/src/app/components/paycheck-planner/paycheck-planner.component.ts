@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { Account, PaycheckPlanner } from '../../services/api.service';
+import { PlannedPaymentsService } from '../../services/planned-payments.service';
 
 type SimulationResult = {
   baselineMonths: number;
@@ -37,8 +38,13 @@ export class PaycheckPlannerComponent {
   };
 
   @Input({ required: true }) accounts: Account[] = [];
+  @Output() plannedPaymentsChanged = new EventEmitter<void>();
 
   simulation: SimulationResult | null = null;
+  applyingSimulation = false;
+  applyMessage: string | null = null;
+
+  constructor(private plannedPaymentsService: PlannedPaymentsService) {}
 
   simulateExtraPayment(): void {
     const card = this.recommendedAccount;
@@ -67,6 +73,43 @@ export class PaycheckPlannerComponent {
       monthsSaved: Math.max(baseline.months - improved.months, 0),
       interestSaved: Math.max(baseline.interest - improved.interest, 0),
     };
+  }
+
+  applyPaymentSimulation(): void {
+    this.simulateExtraPayment();
+
+    const card = this.recommendedAccount;
+    const amount = this.planner.suggestedAllocation.extraDebtPayment;
+    const date = this.planner.paycheckDate;
+
+    if (!card || amount <= 0 || !date) {
+      this.applyMessage = 'No eligible payment simulation to apply.';
+      return;
+    }
+
+    this.applyingSimulation = true;
+    this.applyMessage = null;
+
+    this.plannedPaymentsService
+      .create({
+        accountId: card.plaidAccountId || card.id,
+        amount: Number(amount.toFixed(2)),
+        date,
+        type: 'PAYCHECK_PLAN',
+        source: 'paycheck',
+        strategy: 'avalanche',
+      })
+      .subscribe({
+        next: () => {
+          this.applyingSimulation = false;
+          this.applyMessage = 'Planned payment saved.';
+          this.plannedPaymentsChanged.emit();
+        },
+        error: () => {
+          this.applyingSimulation = false;
+          this.applyMessage = 'Failed to save planned payment.';
+        },
+      });
   }
 
   get recommendedAccount(): Account | null {

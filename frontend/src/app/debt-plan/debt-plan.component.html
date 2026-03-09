@@ -1,0 +1,78 @@
+<section class="debt-plan-page">
+  <header class="page-header">
+    <h1>Debt Plan</h1>
+    <p>Generate and apply a 12-month optimized payment roadmap.</p>
+  </header>
+
+  <div class="tabs">
+    <button
+      type="button"
+      [class.active]="activeStrategy === 'avalanche'"
+      (click)="setStrategy('avalanche')"
+    >
+      Avalanche
+    </button>
+    <button
+      type="button"
+      [class.active]="activeStrategy === 'snowball'"
+      (click)="setStrategy('snowball')"
+    >
+      Snowball
+    </button>
+  </div>
+
+  <p class="error" *ngIf="error">{{ error }}</p>
+  <p class="loading" *ngIf="loading">Loading plan...</p>
+
+  <ng-container *ngIf="!loading && activePlan as plan">
+    <section class="summary">
+      <article>
+        <p class="label">Projected Payoff Date</p>
+        <p class="value">{{ plan.payoffDate ? (plan.payoffDate | date: 'MMMM y') : 'Beyond horizon' }}</p>
+      </article>
+      <article>
+        <p class="label">Interest Cost</p>
+        <p class="value debt">{{ plan.totalInterest | currency }}</p>
+      </article>
+      <article>
+        <p class="label">Saved vs Minimum-Only</p>
+        <p class="value income">{{ plan.interestSavedVsMinimumOnly | currency }}</p>
+      </article>
+    </section>
+
+    <div class="apply-row">
+      <button type="button" class="apply-btn" [disabled]="applying" (click)="applyPlan()">
+        {{ applying ? 'Applying...' : 'Apply Plan' }}
+      </button>
+      <p class="subtext" *ngIf="applyMessage">{{ applyMessage }}</p>
+    </div>
+
+    <section class="plan-table-wrap">
+      <table class="plan-table">
+        <thead>
+          <tr>
+            <th>Month</th>
+            <th>Card</th>
+            <th>Payment Date</th>
+            <th>Due Date</th>
+            <th>Minimum</th>
+            <th>Payment</th>
+            <th>Remaining Balance</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of activePlanRows">
+            <td>{{ row.month }}</td>
+            <td>{{ row.accountName }}</td>
+            <td>{{ row.paymentDate | date: 'MMM d, y' }}</td>
+            <td>{{ row.dueDate ? (row.dueDate | date: 'MMM d, y') : 'Not set' }}</td>
+            <td>{{ row.minimumPayment | currency }}</td>
+            <td>{{ row.amount | currency }}</td>
+            <td>{{ row.remainingBalance | currency }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="subtext" *ngIf="!activePlanRows.length">No payments generated in the selected horizon.</p>
+    </section>
+  </ng-container>
+</section>

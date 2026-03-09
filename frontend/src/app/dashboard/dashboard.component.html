@@ -19,6 +19,8 @@
       [monthlyIncome]="income.totalMonthlyIncome"
       [nextPaycheckAmount]="income.nextPaycheckAmount"
       [nextPaycheckDate]="income.nextPaycheckDate"
+      [plannedPaymentsTotal]="plannedPaymentsNext30Days"
+      [plannedPaymentsCount]="plannedPaymentsCount"
     />
 
     <section class="metrics-strip">
@@ -66,7 +68,11 @@
       </section>
 
       <section class="full-width-section">
-        <app-paycheck-planner [planner]="paycheckPlanner" [accounts]="accounts" />
+        <app-paycheck-planner
+          [planner]="paycheckPlanner"
+          [accounts]="accounts"
+          (plannedPaymentsChanged)="onPlannedPaymentsChanged()"
+        />
       </section>
 
       <section class="full-width-section">
@@ -100,9 +106,15 @@
           <ng-container *ngIf="cell.date">
             <p class="day-number">{{ cell.dayOfMonth }}</p>
             <ul class="due-list" *ngIf="cell.bills.length; else noDueBills">
-              <li *ngFor="let bill of cell.bills" [class.payday]="bill.kind === 'payday'">
+              <li
+                *ngFor="let bill of cell.bills"
+                [class.payday]="bill.kind === 'payday'"
+                [class.planned-payment]="bill.kind === 'planned_payment'"
+                [class.estimated]="bill.isEstimated"
+              >
                 <span class="item-name">{{ bill.name }}</span>
                 <span class="item-amount">{{ bill.kind === 'payday' ? '+' : '-' }}{{ bill.amount | currency }}</span>
+                <span *ngIf="bill.isEstimated" class="est-badge">Est. 3% minimum</span>
               </li>
             </ul>
             <ng-template #noDueBills>

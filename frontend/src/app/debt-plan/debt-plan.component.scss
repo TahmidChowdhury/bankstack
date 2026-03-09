@@ -1,0 +1,148 @@
+.debt-plan-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.page-header {
+  margin-bottom: 16px;
+
+  h1 {
+    margin: 0;
+    color: #101828;
+  }
+
+  p {
+    margin: 6px 0 0;
+    color: #667085;
+  }
+}
+
+.tabs {
+  display: inline-flex;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 10px;
+  background: #e4eefa;
+  margin-bottom: 16px;
+
+  button {
+    border: none;
+    background: transparent;
+    color: #1f2937;
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 8px 14px;
+    cursor: pointer;
+  }
+
+  button.active {
+    background: #fff;
+    box-shadow: 0 4px 10px rgba(16, 24, 40, 0.08);
+  }
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+
+  article {
+    background: #fff;
+    border-radius: 12px;
+    padding: 14px;
+    box-shadow: 0 8px 24px rgba(20, 28, 44, 0.06);
+  }
+}
+
+.label {
+  margin: 0;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #667085;
+}
+
+.value {
+  margin: 8px 0 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #101828;
+}
+
+.value.debt {
+  color: #b42318;
+}
+
+.value.income {
+  color: #067647;
+}
+
+.apply-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.apply-btn {
+  border: none;
+  border-radius: 8px;
+  background: #1570ef;
+  color: #fff;
+  font-weight: 600;
+  padding: 8px 12px;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+}
+
+.plan-table-wrap {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(20, 28, 44, 0.06);
+  overflow-x: auto;
+}
+
+.plan-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 920px;
+
+  th,
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #eaecf0;
+    text-align: left;
+  }
+
+  th {
+    background: #f9fafb;
+    color: #475467;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+}
+
+.subtext,
+.loading,
+.error {
+  margin: 0;
+  color: #667085;
+}
+
+.error {
+  color: #b42318;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 900px) {
+  .summary {
+    grid-template-columns: 1fr;
+  }
+}
