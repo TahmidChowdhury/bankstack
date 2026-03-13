@@ -16,13 +16,16 @@ model User {
 }
 
 model PlaidItem {
-  id          String    @id @default(cuid())
-  plaidItemId String    @unique
-  institution String
-  accessToken String
-  accounts    Account[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id           String    @id @default(cuid())
+  plaidItemId  String    @unique
+  institution  String
+  accessToken  String    // AES-256-GCM encrypted, base64-encoded
+  syncCursor   String?   // Plaid transactions/sync cursor
+  lastSyncedAt DateTime?
+  status       String    @default("ACTIVE") // ACTIVE | LOGIN_REQUIRED
+  accounts     Account[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }
 
 model Account {
@@ -47,16 +50,17 @@ model Account {
 }
 
 model Transaction {
-  id           String   @id @default(cuid())
-  plaidTransactionId String? @unique
-  accountId    String
-  account      Account  @relation(fields: [accountId], references: [id])
-  amount       Float
-  date         DateTime
-  merchantName String?
-  category     String?
-  description  String?
-  createdAt    DateTime @default(now())
+  id                 String   @id @default(cuid())
+  plaidTransactionId String?  @unique
+  accountId          String
+  account            Account  @relation(fields: [accountId], references: [id])
+  amount             Float
+  date               DateTime
+  merchantName       String?
+  category           String?
+  description        String?
+  pending            Boolean  @default(false)
+  createdAt          DateTime @default(now())
 }
 
 model BalanceSnapshot {

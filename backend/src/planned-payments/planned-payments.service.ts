@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePlannedPaymentDto } from './dto/create-planned-payment.dto';
+import { UpdatePlannedPaymentDto } from './dto/update-planned-payment.dto';
 
 type PlannedPaymentResponse = {
   id: string;
@@ -95,6 +96,41 @@ export class PlannedPaymentsService {
       status: item.status,
       createdAt: item.createdAt.toISOString(),
     }));
+  }
+
+  async update(id: string, dto: UpdatePlannedPaymentDto): Promise<PlannedPaymentResponse> {
+    const existing = await this.prisma.plannedPayment.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`Planned payment "${id}" was not found.`);
+    }
+
+    const updated = await this.prisma.plannedPayment.update({
+      where: { id },
+      data: {
+        ...(dto.status !== undefined && { status: dto.status }),
+      },
+      include: {
+        account: { select: { id: true, plaidAccountId: true, name: true } },
+      },
+    });
+
+    return {
+      id: updated.id,
+      accountId: updated.account.plaidAccountId,
+      internalAccountId: updated.account.id,
+      accountName: updated.account.name,
+      amount: updated.amount,
+      date: updated.date.toISOString().slice(0, 10),
+      type: updated.type,
+      source: updated.source,
+      strategy: updated.strategy,
+      status: updated.status,
+      createdAt: updated.createdAt.toISOString(),
+    };
   }
 
   async remove(id: string) {
