@@ -2,6 +2,7 @@ import { IsDateString, IsIn, IsNumber, IsOptional, IsString, Min } from 'class-v
 
 const ALLOWED_TYPES = ['MINIMUM', 'EXTRA', 'PAYCHECK_PLAN'] as const;
 const ALLOWED_STRATEGIES = ['avalanche', 'snowball', 'hybrid'] as const;
+const ALLOWED_STATUSES = ['PLANNED', 'PAID', 'SKIPPED'] as const;
 
 export class CreatePlannedPaymentDto {
   @IsString()
@@ -27,4 +28,9 @@ export class CreatePlannedPaymentDto {
   @IsString()
   @IsIn(ALLOWED_STRATEGIES)
   strategy?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(ALLOWED_STATUSES)
+  status?: string;
 }

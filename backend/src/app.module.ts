@@ -1,6 +1,7 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { LoggerMiddleware } from './logger.middleware';
 import { PrismaModule } from './prisma/prisma.module';
 import { PlaidModule } from './plaid/plaid.module';
 import { DebtModule } from './debt/debt.module';
@@ -26,4 +27,8 @@ import { InsightsModule } from './insights/insights.module';
     InsightsModule,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(LoggerMiddleware).forRoutes('*');
+  }
+}

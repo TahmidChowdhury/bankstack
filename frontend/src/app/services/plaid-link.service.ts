@@ -14,6 +14,28 @@ interface PlaidExitError {
   error_type: string;
 }
 
+interface PlaidOnExitMetadata {
+  institution?: PlaidInstitution | null;
+  link_session_id?: string | null;
+  request_id?: string | null;
+  status?: string | null;
+  [key: string]: unknown;
+}
+
+interface PlaidEventMetadata {
+  error_code?: string | null;
+  error_message?: string | null;
+  error_type?: string | null;
+  institution_name?: string | null;
+  institution_id?: string | null;
+  link_session_id?: string | null;
+  request_id?: string | null;
+  view_name?: string | null;
+  mfa_type?: string | null;
+  timestamp?: string | null;
+  [key: string]: unknown;
+}
+
 interface PlaidHandler {
   open: () => void;
 }
@@ -22,7 +44,8 @@ interface PlaidFactory {
   create: (options: {
     token: string;
     onSuccess: (publicToken: string, metadata: PlaidOnSuccessMetadata) => void;
-    onExit: (error: PlaidExitError | null) => void;
+    onExit: (error: PlaidExitError | null, metadata: PlaidOnExitMetadata) => void;
+    onEvent?: (eventName: string, metadata: PlaidEventMetadata) => void;
   }) => PlaidHandler;
 }
 
@@ -41,7 +64,11 @@ export class PlaidLinkService {
   async createHandler(options: {
     linkToken: string;
     onSuccess: (result: { publicToken: string; institutionName: string }) => void;
-    onExit: (error: Error | null) => void;
+    onExit: (result: {
+      error: PlaidExitError | null;
+      metadata: PlaidOnExitMetadata | null;
+    }) => void;
+    onEvent?: (event: { eventName: string; metadata: PlaidEventMetadata }) => void;
   }): Promise<PlaidHandler> {
     await this.loadSdk();
 
@@ -53,13 +80,17 @@ export class PlaidLinkService {
           institutionName: metadata.institution?.name ?? 'Unknown',
         });
       },
-      onExit: (error) => {
-        if (error) {
-          options.onExit(new Error(`${error.error_type}: ${error.error_message}`));
-          return;
-        }
-
-        options.onExit(null);
+      onExit: (error, metadata) => {
+        options.onExit({
+          error,
+          metadata: metadata ?? null,
+        });
+      },
+      onEvent: (eventName, metadata) => {
+        options.onEvent?.({
+          eventName,
+          metadata,
+        });
       },
     });
 

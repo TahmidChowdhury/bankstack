@@ -47,6 +47,7 @@ export class DebtPlanComponent implements OnInit {
       return;
     }
 
+    if (this.applying) return;
     this.applyMessage = null;
     this.applying = true;
 

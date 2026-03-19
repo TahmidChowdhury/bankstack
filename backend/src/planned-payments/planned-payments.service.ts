@@ -33,6 +33,39 @@ export class PlannedPaymentsService {
       throw new NotFoundException(`Account "${dto.accountId}" was not found.`);
     }
 
+    const targetStatus = dto.status ?? 'PLANNED';
+    const targetType = dto.type ?? 'PAYCHECK_PLAN';
+
+    // Dedup: return existing record if one already exists for same account/date/type
+    // Only dedup PLANNED records (PAID records are always distinct events)
+    if (targetStatus.toUpperCase() === 'PLANNED') {
+      const existing = await this.prisma.plannedPayment.findFirst({
+        where: {
+          accountId: account.id,
+          date: new Date(dto.date),
+          type: targetType,
+          status: { in: ['PLANNED', 'planned'] },
+        },
+        include: { account: { select: { id: true, plaidAccountId: true, name: true } } },
+      });
+
+      if (existing) {
+        return {
+          id: existing.id,
+          accountId: existing.account.plaidAccountId,
+          internalAccountId: existing.account.id,
+          accountName: existing.account.name,
+          amount: existing.amount,
+          date: existing.date.toISOString().slice(0, 10),
+          type: existing.type,
+          source: existing.source,
+          strategy: existing.strategy,
+          status: existing.status,
+          createdAt: existing.createdAt.toISOString(),
+        };
+      }
+    }
+
     const plannedPayment = await this.prisma.plannedPayment.create({
       data: {
         accountId: account.id,
@@ -41,7 +74,7 @@ export class PlannedPaymentsService {
         type: dto.type ?? 'PAYCHECK_PLAN',
         source: dto.source ?? null,
         strategy: dto.strategy ?? null,
-        status: 'PLANNED',
+        status: dto.status ?? 'PLANNED',
       },
       include: {
         account: {

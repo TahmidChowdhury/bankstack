@@ -411,6 +411,24 @@ export class PlaidService {
     });
   }
 
+  async updateAccount(
+    id: string,
+    data: {
+      name?: string;
+      currentBalance?: number;
+      availableBalance?: number | null;
+      apr?: number | null;
+      minimumPayment?: number | null;
+      dueDayOfMonth?: number | null;
+    },
+  ) {
+    const existing = await this.prisma.account.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException(`Account "${id}" was not found.`);
+    }
+    return this.prisma.account.update({ where: { id }, data });
+  }
+
   async getTransactions(accountId?: string) {
     return this.prisma.transaction.findMany({
       where: accountId ? { accountId } : undefined,

@@ -54,6 +54,12 @@
     align-items: center;
     margin-bottom: 12px;
 
+    .account-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     .institution {
       font-size: 0.875rem;
       color: #6c757d;
@@ -170,4 +176,108 @@
   text-align: center;
   padding: 40px;
   color: #6c757d;
+}
+
+.edit-btn {
+  padding: 3px 10px;
+  border: 1px solid #d0d5dd;
+  border-radius: 6px;
+  background: #fff;
+  color: #344054;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+
+  &:hover {
+    background: #eff4ff;
+    border-color: #a4bcfd;
+    color: #1570ef;
+  }
+}
+
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  span {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #475467;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  input {
+    padding: 7px 10px;
+    border: 1px solid #d0d5dd;
+    border-radius: 7px;
+    font-size: 0.9rem;
+    color: #0f1728;
+    background: #f9fafb;
+    transition: border-color 0.15s;
+
+    &:focus {
+      outline: none;
+      border-color: #1570ef;
+      background: #fff;
+    }
+  }
+}
+
+.save-error {
+  font-size: 0.8rem;
+  color: #b42318;
+  margin: 0;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.btn-save {
+  flex: 1;
+  padding: 8px 0;
+  border: none;
+  border-radius: 7px;
+  background: #1570ef;
+  color: #fff;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &:not(:disabled):hover {
+    background: #1056b3;
+  }
+}
+
+.btn-cancel {
+  flex: 1;
+  padding: 8px 0;
+  border: 1px solid #d0d5dd;
+  border-radius: 7px;
+  background: #fff;
+  color: #344054;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    background: #f2f4f7;
+  }
 }

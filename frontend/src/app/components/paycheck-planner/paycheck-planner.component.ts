@@ -44,6 +44,35 @@ export class PaycheckPlannerComponent {
   applyingSimulation = false;
   applyMessage: string | null = null;
 
+  manualAmount: number | null = null;
+
+  onManualAmountChange(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    const parsed = parseFloat(value);
+    this.manualAmount = isNaN(parsed) || parsed <= 0 ? null : parsed;
+    this.simulation = null;
+    this.applyMessage = null;
+  }
+
+  get effectiveAmount(): number {
+    return this.manualAmount ?? this.planner.nextPaycheckAmount;
+  }
+
+  get effectiveAllocation(): typeof this.planner.suggestedAllocation {
+    if (this.manualAmount === null) {
+      return this.planner.suggestedAllocation;
+    }
+    const amount = this.manualAmount;
+    const recurringBills = this.planner.requiredPayments.recurringBills;
+    const creditCardMinimums = this.planner.requiredPayments.creditCardMinimums;
+    const totalRequired = recurringBills + creditCardMinimums;
+    const livingExpenses = amount * 0.25;
+    const afterObligations = Math.max(amount - totalRequired - livingExpenses, 0);
+    const remainingBuffer = afterObligations * 0.1;
+    const extraDebtPayment = Math.max(afterObligations - remainingBuffer, 0);
+    return { recurringBills, creditCardMinimums, livingExpenses, extraDebtPayment, remainingBuffer };
+  }
+
   constructor(private plannedPaymentsService: PlannedPaymentsService) {}
 
   simulateExtraPayment(): void {
@@ -62,7 +91,7 @@ export class PaycheckPlannerComponent {
 
     const baseline = this.simulate(card.currentBalance, monthlyRate, minimumPayment);
     const improvedStartingBalance = Math.max(
-      card.currentBalance - this.planner.suggestedAllocation.extraDebtPayment,
+      card.currentBalance - this.effectiveAllocation.extraDebtPayment,
       0,
     );
     const improved = this.simulate(improvedStartingBalance, monthlyRate, minimumPayment);
@@ -79,7 +108,7 @@ export class PaycheckPlannerComponent {
     this.simulateExtraPayment();
 
     const card = this.recommendedAccount;
-    const amount = this.planner.suggestedAllocation.extraDebtPayment;
+    const amount = this.effectiveAllocation.extraDebtPayment;
     const date = this.planner.paycheckDate;
 
     if (!card || amount <= 0 || !date) {

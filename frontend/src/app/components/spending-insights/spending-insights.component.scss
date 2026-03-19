@@ -1,0 +1,113 @@
+.panel {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 8px 24px rgba(20, 28, 44, 0.06);
+
+  header {
+    h3 {
+      margin: 0;
+      color: #101828;
+      font-size: 1rem;
+    }
+
+    p {
+      margin: 4px 0 0;
+      color: #667085;
+      font-size: 0.85rem;
+    }
+  }
+}
+
+.stats {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+  gap: 10px;
+
+  article {
+    border: 1px solid #eaecf0;
+    border-radius: 10px;
+    padding: 10px;
+  }
+}
+
+.label {
+  margin: 0;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #667085;
+}
+
+.value {
+  margin: 6px 0 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #101828;
+}
+
+.value.debt,
+.value.negative {
+  color: #b42318;
+}
+
+.subtext {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: #667085;
+}
+
+.meter {
+  margin-top: 12px;
+  height: 8px;
+  border-radius: 999px;
+  background: #eaecf0;
+  overflow: hidden;
+}
+
+.meter-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1570ef, #17b26a);
+}
+
+.categories {
+  margin-top: 12px;
+
+  h4 {
+    margin: 0 0 8px;
+    font-size: 0.9rem;
+    color: #344054;
+  }
+
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 6px;
+  }
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 0.84rem;
+    color: #1d2939;
+    padding: 8px 10px;
+    border: 1px solid #eaecf0;
+    border-radius: 8px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .stats {
+    grid-template-columns: repeat(2, minmax(150px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .stats {
+    grid-template-columns: 1fr;
+  }
+}

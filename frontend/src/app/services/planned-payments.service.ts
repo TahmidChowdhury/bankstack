@@ -23,6 +23,11 @@ export type CreatePlannedPaymentPayload = {
   type?: string;
   source?: string;
   strategy?: string;
+  status?: 'PLANNED' | 'PAID' | 'SKIPPED';
+};
+
+export type UpdatePlannedPaymentPayload = {
+  status?: 'PLANNED' | 'PAID' | 'SKIPPED';
 };
 
 @Injectable({
@@ -39,6 +44,10 @@ export class PlannedPaymentsService {
 
   list(): Observable<PlannedPayment[]> {
     return this.http.get<PlannedPayment[]>(this.baseUrl);
+  }
+
+  update(id: string, payload: UpdatePlannedPaymentPayload): Observable<PlannedPayment> {
+    return this.http.patch<PlannedPayment>(`${this.baseUrl}/${id}`, payload);
   }
 
   delete(id: string): Observable<{ success: boolean }> {

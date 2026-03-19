@@ -20,20 +20,48 @@
         <div *ngFor="let account of depositoryAccounts" class="account-card">
           <div class="account-header">
             <div class="account-type-badge depository">{{ getAccountTypeLabel(account.type) }}</div>
-            <span class="institution">{{ account.institution }}</span>
+            <div class="account-header-actions">
+              <span class="institution">{{ account.institution }}</span>
+              <button class="edit-btn" type="button" (click)="openEdit(account)" *ngIf="editingId !== account.id">Edit</button>
+            </div>
           </div>
           <h3>{{ account.name }}</h3>
-          <div class="balances">
-            <div class="balance-row">
-              <span class="label">Current Balance</span>
-              <span class="value">{{ account.currentBalance | currency }}</span>
+
+          <ng-container *ngIf="editingId !== account.id">
+            <div class="balances">
+              <div class="balance-row">
+                <span class="label">Current Balance</span>
+                <span class="value">{{ account.currentBalance | currency }}</span>
+              </div>
+              <div *ngIf="account.availableBalance !== null" class="balance-row">
+                <span class="label">Available Balance</span>
+                <span class="value">{{ account.availableBalance | currency }}</span>
+              </div>
             </div>
-            <div *ngIf="account.availableBalance !== null" class="balance-row">
-              <span class="label">Available Balance</span>
-              <span class="value">{{ account.availableBalance | currency }}</span>
+            <div class="subtype" *ngIf="account.subtype">{{ account.subtype }}</div>
+          </ng-container>
+
+          <ng-container *ngIf="editingId === account.id">
+            <div class="edit-form">
+              <label class="edit-field">
+                <span>Account Name</span>
+                <input type="text" [(ngModel)]="editForm.name" />
+              </label>
+              <label class="edit-field">
+                <span>Current Balance ($)</span>
+                <input type="number" step="0.01" [(ngModel)]="editForm.currentBalance" />
+              </label>
+              <label class="edit-field">
+                <span>Available Balance ($)</span>
+                <input type="number" step="0.01" [(ngModel)]="editForm.availableBalance" />
+              </label>
+              <p class="save-error" *ngIf="saveError">{{ saveError }}</p>
+              <div class="edit-actions">
+                <button class="btn-save" type="button" (click)="saveEdit(account)" [disabled]="saving">{{ saving ? 'Saving…' : 'Save' }}</button>
+                <button class="btn-cancel" type="button" (click)="cancelEdit()">Cancel</button>
+              </div>
             </div>
-          </div>
-          <div class="subtype" *ngIf="account.subtype">{{ account.subtype }}</div>
+          </ng-container>
         </div>
       </div>
     </div>
@@ -44,23 +72,71 @@
         <div *ngFor="let account of creditAccounts" class="account-card credit">
           <div class="account-header">
             <div class="account-type-badge credit">Credit Card</div>
-            <span class="institution">{{ account.institution }}</span>
+            <div class="account-header-actions">
+              <span class="institution">{{ account.institution }}</span>
+              <button class="edit-btn" type="button" (click)="openEdit(account)" *ngIf="editingId !== account.id">Edit</button>
+            </div>
           </div>
           <h3>{{ account.name }}</h3>
-          <div class="balances">
-            <div class="balance-row">
-              <span class="label">Current Balance</span>
-              <span class="value negative">{{ account.currentBalance | currency }}</span>
+
+          <ng-container *ngIf="editingId !== account.id">
+            <div class="balances">
+              <div class="balance-row">
+                <span class="label">Current Balance</span>
+                <span class="value negative">{{ account.currentBalance | currency }}</span>
+              </div>
+              <div *ngIf="account.availableBalance !== null" class="balance-row">
+                <span class="label">Available Credit</span>
+                <span class="value">{{ account.availableBalance | currency }}</span>
+              </div>
+              <div *ngIf="account.apr" class="balance-row">
+                <span class="label">APR</span>
+                <span class="value apr">{{ account.apr }}%</span>
+              </div>
+              <div *ngIf="account.minimumPayment" class="balance-row">
+                <span class="label">Minimum Payment</span>
+                <span class="value">{{ account.minimumPayment | currency }}</span>
+              </div>
+              <div *ngIf="account.dueDayOfMonth" class="balance-row">
+                <span class="label">Due Day</span>
+                <span class="value">{{ account.dueDayOfMonth }}th of month</span>
+              </div>
             </div>
-            <div *ngIf="account.availableBalance !== null" class="balance-row">
-              <span class="label">Available Credit</span>
-              <span class="value">{{ account.availableBalance | currency }}</span>
+          </ng-container>
+
+          <ng-container *ngIf="editingId === account.id">
+            <div class="edit-form">
+              <label class="edit-field">
+                <span>Account Name</span>
+                <input type="text" [(ngModel)]="editForm.name" />
+              </label>
+              <label class="edit-field">
+                <span>Current Balance ($)</span>
+                <input type="number" step="0.01" [(ngModel)]="editForm.currentBalance" />
+              </label>
+              <label class="edit-field">
+                <span>Available Credit ($)</span>
+                <input type="number" step="0.01" [(ngModel)]="editForm.availableBalance" />
+              </label>
+              <label class="edit-field">
+                <span>APR (%)</span>
+                <input type="number" step="0.01" min="0" max="100" [(ngModel)]="editForm.apr" />
+              </label>
+              <label class="edit-field">
+                <span>Minimum Payment ($)</span>
+                <input type="number" step="0.01" min="0" [(ngModel)]="editForm.minimumPayment" />
+              </label>
+              <label class="edit-field">
+                <span>Due Day of Month (1–31)</span>
+                <input type="number" min="1" max="31" step="1" [(ngModel)]="editForm.dueDayOfMonth" />
+              </label>
+              <p class="save-error" *ngIf="saveError">{{ saveError }}</p>
+              <div class="edit-actions">
+                <button class="btn-save" type="button" (click)="saveEdit(account)" [disabled]="saving">{{ saving ? 'Saving…' : 'Save' }}</button>
+                <button class="btn-cancel" type="button" (click)="cancelEdit()">Cancel</button>
+              </div>
             </div>
-            <div *ngIf="account.apr" class="balance-row">
-              <span class="label">APR</span>
-              <span class="value apr">{{ account.apr }}%</span>
-            </div>
-          </div>
+          </ng-container>
         </div>
       </div>
     </div>
@@ -71,17 +147,42 @@
         <div *ngFor="let account of investmentAccounts" class="account-card">
           <div class="account-header">
             <div class="account-type-badge investment">Investment</div>
-            <span class="institution">{{ account.institution }}</span>
-          </div>
-          <h3>{{ account.name }}</h3>
-          <div class="balances">
-            <div class="balance-row">
-              <span class="label">Current Balance</span>
-              <span class="value">{{ account.currentBalance | currency }}</span>
+            <div class="account-header-actions">
+              <span class="institution">{{ account.institution }}</span>
+              <button class="edit-btn" type="button" (click)="openEdit(account)" *ngIf="editingId !== account.id">Edit</button>
             </div>
           </div>
+          <h3>{{ account.name }}</h3>
+
+          <ng-container *ngIf="editingId !== account.id">
+            <div class="balances">
+              <div class="balance-row">
+                <span class="label">Current Balance</span>
+                <span class="value">{{ account.currentBalance | currency }}</span>
+              </div>
+            </div>
+          </ng-container>
+
+          <ng-container *ngIf="editingId === account.id">
+            <div class="edit-form">
+              <label class="edit-field">
+                <span>Account Name</span>
+                <input type="text" [(ngModel)]="editForm.name" />
+              </label>
+              <label class="edit-field">
+                <span>Current Balance ($)</span>
+                <input type="number" step="0.01" [(ngModel)]="editForm.currentBalance" />
+              </label>
+              <p class="save-error" *ngIf="saveError">{{ saveError }}</p>
+              <div class="edit-actions">
+                <button class="btn-save" type="button" (click)="saveEdit(account)" [disabled]="saving">{{ saving ? 'Saving…' : 'Save' }}</button>
+                <button class="btn-cancel" type="button" (click)="cancelEdit()">Cancel</button>
+              </div>
+            </div>
+          </ng-container>
         </div>
       </div>
     </div>
   </div>
 </div>
+

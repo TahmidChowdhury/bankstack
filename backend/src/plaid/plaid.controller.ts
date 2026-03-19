@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { PlaidService } from './plaid.service';
 
 @Controller()
@@ -54,5 +54,21 @@ export class PlaidController {
   @Get('transactions')
   async getTransactions(@Query('accountId') accountId?: string) {
     return this.plaidService.getTransactions(accountId);
+  }
+
+  @Patch('accounts/:id')
+  async updateAccount(
+    @Param('id') id: string,
+    @Body()
+    body: {
+      name?: string;
+      currentBalance?: number;
+      availableBalance?: number | null;
+      apr?: number | null;
+      minimumPayment?: number | null;
+      dueDayOfMonth?: number | null;
+    },
+  ) {
+    return this.plaidService.updateAccount(id, body);
   }
 }

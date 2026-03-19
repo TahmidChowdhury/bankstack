@@ -7,7 +7,7 @@
   <div class="topline">
     <article>
       <p class="label">Next Paycheck</p>
-      <p class="value">{{ planner.nextPaycheckAmount | currency }}</p>
+      <p class="value">{{ effectiveAmount | currency }}</p>
       <p class="subtext">{{ planner.paycheckDate ? (planner.paycheckDate | date: 'MMMM d') : 'Not scheduled' }}</p>
     </article>
     <article>
@@ -15,6 +15,23 @@
       <p class="value debt">{{ planner.requiredPayments.totalRequired | currency }}</p>
       <p class="subtext">Bills + minimums before next paycheck</p>
     </article>
+  </div>
+
+  <div class="manual-amount-row">
+    <label for="manual-amount">Got paid a different amount?</label>
+    <div class="manual-amount-input-wrap">
+      <span class="currency-prefix">$</span>
+      <input
+        id="manual-amount"
+        type="number"
+        min="0.01"
+        step="0.01"
+        placeholder="{{ planner.nextPaycheckAmount | number: '1.2-2' }}"
+        [value]="manualAmount ?? ''"
+        (input)="onManualAmountChange($event)"
+      />
+    </div>
+    <button *ngIf="manualAmount !== null" class="btn-ghost" type="button" (click)="manualAmount = null; simulation = null; applyMessage = null">Reset</button>
   </div>
 
   <section class="block">
@@ -35,11 +52,11 @@
   <section class="block">
     <h4>Suggested Allocation</h4>
     <dl>
-      <div><dt>Recurring Bills</dt><dd>{{ planner.suggestedAllocation.recurringBills | currency }}</dd></div>
-      <div><dt>Minimum Payments</dt><dd>{{ planner.suggestedAllocation.creditCardMinimums | currency }}</dd></div>
-      <div><dt>Living Expenses</dt><dd>{{ planner.suggestedAllocation.livingExpenses | currency }}</dd></div>
-      <div><dt>Extra Toward Debt</dt><dd>{{ planner.suggestedAllocation.extraDebtPayment | currency }}</dd></div>
-      <div><dt>Remaining Buffer</dt><dd>{{ planner.suggestedAllocation.remainingBuffer | currency }}</dd></div>
+      <div><dt>Recurring Bills</dt><dd>{{ effectiveAllocation.recurringBills | currency }}</dd></div>
+      <div><dt>Minimum Payments</dt><dd>{{ effectiveAllocation.creditCardMinimums | currency }}</dd></div>
+      <div><dt>Living Expenses</dt><dd>{{ effectiveAllocation.livingExpenses | currency }}</dd></div>
+      <div><dt>Extra Toward Debt</dt><dd>{{ effectiveAllocation.extraDebtPayment | currency }}</dd></div>
+      <div><dt>Remaining Buffer</dt><dd>{{ effectiveAllocation.remainingBuffer | currency }}</dd></div>
     </dl>
   </section>
 

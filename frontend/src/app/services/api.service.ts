@@ -26,7 +26,27 @@ export interface Transaction {
   merchantName: string | null;
   category: string | null;
   description: string | null;
+  pending: boolean;
   account: Account;
+}
+
+export interface PlaidItem {
+  id: string;
+  plaidItemId: string;
+  institution: string;
+  status: string;
+  lastSyncedAt: string | null;
+  createdAt: string;
+  _count: { accounts: number };
+}
+
+export interface SyncResult {
+  itemsProcessed: number;
+  transactionsAdded: number;
+  transactionsModified: number;
+  transactionsRemoved: number;
+  accountsUpdated: number;
+  errors: string[];
 }
 
 export interface DebtSummary {
@@ -100,6 +120,22 @@ export interface IncomeSummary {
   sources: IncomeSource[];
 }
 
+export interface SpendingInsights {
+  month: string;
+  asOfDate: string;
+  incomePlanned: number;
+  fixedObligations: number;
+  spentToDate: number;
+  remainingToSpend: number;
+  safePerDay: number;
+  daysRemaining: number;
+  categoryBreakdown: Array<{
+    category: string;
+    amount: number;
+    share: number;
+  }>;
+}
+
 export interface CashflowPoint {
   date: string;
   balance: number;
@@ -129,6 +165,8 @@ export interface CashflowForecast {
   }>;
   startingCash: number;
   projectedBalance: CashflowPoint[];
+  projectedBalanceBase: CashflowPoint[];
+  projectedBalanceWithSavings: CashflowPoint[];
 }
 
 export interface RecurringExpenseDay {
@@ -197,7 +235,16 @@ export class ApiService {
     return this.http.get<IncomeSummary>(`${this.baseUrl}/income`);
   }
 
-  getCashflowForecast(): Observable<CashflowForecast> {
+  getSpendingInsights(): Observable<SpendingInsights> {
+    return this.http.get<SpendingInsights>(`${this.baseUrl}/insights/spending`);
+  }
+
+  getCashflowForecast(strategy?: string): Observable<CashflowForecast> {
+    if (strategy) {
+      return this.http.get<CashflowForecast>(`${this.baseUrl}/cashflow/forecast`, {
+        params: { strategy },
+      });
+    }
     return this.http.get<CashflowForecast>(`${this.baseUrl}/cashflow/forecast`);
   }
 
@@ -230,5 +277,27 @@ export class ApiService {
       public_token: publicToken,
       institution_name: institutionName,
     });
+  }
+
+  syncPlaid(): Observable<SyncResult> {
+    return this.http.post<SyncResult>(`${this.baseUrl}/plaid/sync`, {});
+  }
+
+  getPlaidItems(): Observable<PlaidItem[]> {
+    return this.http.get<PlaidItem[]>(`${this.baseUrl}/plaid/items`);
+  }
+
+  updateAccount(
+    id: string,
+    data: {
+      name?: string;
+      currentBalance?: number;
+      availableBalance?: number | null;
+      apr?: number | null;
+      minimumPayment?: number | null;
+      dueDayOfMonth?: number | null;
+    },
+  ): Observable<Account> {
+    return this.http.patch<Account>(`${this.baseUrl}/accounts/${id}`, data);
   }
 }
