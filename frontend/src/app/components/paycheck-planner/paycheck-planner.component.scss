@@ -119,6 +119,11 @@
   font-weight: 600;
   padding: 8px 12px;
   cursor: pointer;
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
 }
 
 .simulation {

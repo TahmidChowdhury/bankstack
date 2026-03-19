@@ -1,0 +1,48 @@
+<section class="panel">
+  <header>
+    <h3>Spending Insights</h3>
+    <p>Safe-to-spend guidance for the rest of the month</p>
+  </header>
+
+  <div class="stats">
+    <article>
+      <p class="label">Safe to Spend</p>
+      <p class="value" [class.negative]="insights.remainingToSpend < 0">
+        {{ insights.remainingToSpend | currency }}
+      </p>
+      <p class="subtext">{{ insights.daysRemaining }} days left</p>
+    </article>
+    <article>
+      <p class="label">Daily Budget</p>
+      <p class="value" [class.negative]="insights.safePerDay < 0">{{ insights.safePerDay | currency }}</p>
+      <p class="subtext">Per day remaining</p>
+    </article>
+    <article>
+      <p class="label">Fixed Obligations</p>
+      <p class="value debt">{{ insights.fixedObligations | currency }}</p>
+      <p class="subtext">Bills + mins + planned</p>
+    </article>
+    <article>
+      <p class="label">Spent So Far</p>
+      <p class="value">{{ insights.spentToDate | currency }}</p>
+      <p class="subtext">As of {{ insights.asOfDate | date: 'MMM d' }}</p>
+    </article>
+  </div>
+
+  <div class="meter">
+    <div class="meter-fill" [style.width.%]="spentPercent"></div>
+  </div>
+
+  <section class="categories">
+    <h4>Top Categories This Month</h4>
+    <ul *ngIf="insights.categoryBreakdown.length; else emptyState">
+      <li *ngFor="let item of insights.categoryBreakdown">
+        <span>{{ item.category }}</span>
+        <span>{{ item.amount | currency }} · {{ item.share | number: '1.0-1' }}%</span>
+      </li>
+    </ul>
+    <ng-template #emptyState>
+      <p class="subtext">No spending recorded this month yet.</p>
+    </ng-template>
+  </section>
+</section>

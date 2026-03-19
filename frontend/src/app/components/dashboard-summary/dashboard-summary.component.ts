@@ -14,4 +14,6 @@ export class DashboardSummaryComponent {
   @Input({ required: true }) monthlyIncome = 0;
   @Input({ required: true }) nextPaycheckAmount = 0;
   @Input() nextPaycheckDate: string | null = null;
+  @Input() plannedPaymentsTotal = 0;
+  @Input() plannedPaymentsCount = 0;
 }

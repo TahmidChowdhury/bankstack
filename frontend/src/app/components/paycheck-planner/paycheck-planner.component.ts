@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { Account, PaycheckPlanner } from '../../services/api.service';
+import { PlannedPaymentsService } from '../../services/planned-payments.service';
 
 type SimulationResult = {
   baselineMonths: number;
@@ -37,8 +38,42 @@ export class PaycheckPlannerComponent {
   };
 
   @Input({ required: true }) accounts: Account[] = [];
+  @Output() plannedPaymentsChanged = new EventEmitter<void>();
 
   simulation: SimulationResult | null = null;
+  applyingSimulation = false;
+  applyMessage: string | null = null;
+
+  manualAmount: number | null = null;
+
+  onManualAmountChange(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    const parsed = parseFloat(value);
+    this.manualAmount = isNaN(parsed) || parsed <= 0 ? null : parsed;
+    this.simulation = null;
+    this.applyMessage = null;
+  }
+
+  get effectiveAmount(): number {
+    return this.manualAmount ?? this.planner.nextPaycheckAmount;
+  }
+
+  get effectiveAllocation(): typeof this.planner.suggestedAllocation {
+    if (this.manualAmount === null) {
+      return this.planner.suggestedAllocation;
+    }
+    const amount = this.manualAmount;
+    const recurringBills = this.planner.requiredPayments.recurringBills;
+    const creditCardMinimums = this.planner.requiredPayments.creditCardMinimums;
+    const totalRequired = recurringBills + creditCardMinimums;
+    const livingExpenses = amount * 0.25;
+    const afterObligations = Math.max(amount - totalRequired - livingExpenses, 0);
+    const remainingBuffer = afterObligations * 0.1;
+    const extraDebtPayment = Math.max(afterObligations - remainingBuffer, 0);
+    return { recurringBills, creditCardMinimums, livingExpenses, extraDebtPayment, remainingBuffer };
+  }
+
+  constructor(private plannedPaymentsService: PlannedPaymentsService) {}
 
   simulateExtraPayment(): void {
     const card = this.recommendedAccount;
@@ -56,7 +91,7 @@ export class PaycheckPlannerComponent {
 
     const baseline = this.simulate(card.currentBalance, monthlyRate, minimumPayment);
     const improvedStartingBalance = Math.max(
-      card.currentBalance - this.planner.suggestedAllocation.extraDebtPayment,
+      card.currentBalance - this.effectiveAllocation.extraDebtPayment,
       0,
     );
     const improved = this.simulate(improvedStartingBalance, monthlyRate, minimumPayment);
@@ -67,6 +102,43 @@ export class PaycheckPlannerComponent {
       monthsSaved: Math.max(baseline.months - improved.months, 0),
       interestSaved: Math.max(baseline.interest - improved.interest, 0),
     };
+  }
+
+  applyPaymentSimulation(): void {
+    this.simulateExtraPayment();
+
+    const card = this.recommendedAccount;
+    const amount = this.effectiveAllocation.extraDebtPayment;
+    const date = this.planner.paycheckDate;
+
+    if (!card || amount <= 0 || !date) {
+      this.applyMessage = 'No eligible payment simulation to apply.';
+      return;
+    }
+
+    this.applyingSimulation = true;
+    this.applyMessage = null;
+
+    this.plannedPaymentsService
+      .create({
+        accountId: card.plaidAccountId || card.id,
+        amount: Number(amount.toFixed(2)),
+        date,
+        type: 'PAYCHECK_PLAN',
+        source: 'paycheck',
+        strategy: 'avalanche',
+      })
+      .subscribe({
+        next: () => {
+          this.applyingSimulation = false;
+          this.applyMessage = 'Planned payment saved.';
+          this.plannedPaymentsChanged.emit();
+        },
+        error: () => {
+          this.applyingSimulation = false;
+          this.applyMessage = 'Failed to save planned payment.';
+        },
+      });
   }
 
   get recommendedAccount(): Account | null {
