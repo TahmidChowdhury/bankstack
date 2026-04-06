@@ -18,6 +18,7 @@ type SeedAccount = {
   institution: string;
   currentBalance: number;
   availableBalance?: number | null;
+  creditLimit?: number | null;
   minimumPayment?: number | null;
   dueDayOfMonth?: number | null;
   apr?: number | null;
@@ -71,6 +72,21 @@ function requireString(value: string, fieldName: string): string {
     throw new Error(`Invalid seed payload: "${fieldName}" must be a non-empty string.`);
   }
   return trimmed;
+}
+
+function resolveAvailableBalance(account: SeedAccount): number | null {
+  if (account.availableBalance != null) {
+    return account.availableBalance;
+  }
+
+  const isCreditAccount =
+    account.type === 'credit' || (account.subtype ?? '').toLowerCase() === 'credit card';
+
+  if (!isCreditAccount || account.creditLimit == null) {
+    return null;
+  }
+
+  return Math.max(account.creditLimit - Math.max(account.currentBalance, 0), 0);
 }
 
 async function loadSeedPayload(): Promise<SeedPayload> {
@@ -161,7 +177,7 @@ async function main() {
           subtype: account.subtype ?? null,
           institution: requireString(account.institution, 'accounts[].institution'),
           currentBalance: account.currentBalance,
-          availableBalance: account.availableBalance ?? null,
+          availableBalance: resolveAvailableBalance(account),
           minimumPayment: account.minimumPayment ?? null,
           dueDayOfMonth: account.dueDayOfMonth ?? null,
           apr: account.apr ?? null,
@@ -174,7 +190,7 @@ async function main() {
           subtype: account.subtype ?? null,
           institution: requireString(account.institution, 'accounts[].institution'),
           currentBalance: account.currentBalance,
-          availableBalance: account.availableBalance ?? null,
+          availableBalance: resolveAvailableBalance(account),
           minimumPayment: account.minimumPayment ?? null,
           dueDayOfMonth: account.dueDayOfMonth ?? null,
           apr: account.apr ?? null,

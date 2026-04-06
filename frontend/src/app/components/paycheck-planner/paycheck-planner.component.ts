@@ -45,6 +45,7 @@ export class PaycheckPlannerComponent {
   applyMessage: string | null = null;
 
   manualAmount: number | null = null;
+  detailsExpanded = false;
 
   onManualAmountChange(event: Event): void {
     const value = (event.target as HTMLInputElement).value;
@@ -56,6 +57,14 @@ export class PaycheckPlannerComponent {
 
   get effectiveAmount(): number {
     return this.manualAmount ?? this.planner.nextPaycheckAmount;
+  }
+
+  get dueBeforePaycheck(): number {
+    return this.planner.requiredPayments.totalRequired;
+  }
+
+  get holdAfterAllocation(): number {
+    return this.effectiveAllocation.remainingBuffer;
   }
 
   get effectiveAllocation(): typeof this.planner.suggestedAllocation {
@@ -161,6 +170,10 @@ export class PaycheckPlannerComponent {
       0,
       Math.min(100, (this.simulation.monthsSaved / this.simulation.baselineMonths) * 100),
     );
+  }
+
+  toggleDetails(): void {
+    this.detailsExpanded = !this.detailsExpanded;
   }
 
   private simulate(

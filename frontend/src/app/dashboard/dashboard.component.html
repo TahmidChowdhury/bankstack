@@ -2,7 +2,7 @@
   <header class="page-header">
     <div>
       <h1>Dashboard</h1>
-      <p class="subtitle">Mint-style overview of debt, cash, income, and activity</p>
+      <p class="subtitle">Minimums-first calendar, required payments, and debt focus guidance</p>
     </div>
     <div class="header-actions">
       <div class="sync-status" *ngIf="hasLinkedItems">
@@ -28,44 +28,11 @@
   <div *ngIf="loading" class="loading">Loading dashboard...</div>
 
   <ng-container *ngIf="!loading">
-    <app-dashboard-summary
-      [netWorth]="summary.netWorth"
-      [totalDebt]="summary.totalDebt"
-      [monthlyIncome]="income.totalMonthlyIncome"
-      [nextPaycheckAmount]="income.nextPaycheckAmount"
-      [nextPaycheckDate]="income.nextPaycheckDate"
-      [plannedPaymentsTotal]="plannedPaymentsNext30Days"
-      [plannedPaymentsCount]="plannedPaymentsCount"
-    />
-
-    <section class="metrics-strip">
-      <article>
-        <p class="label">Total Assets</p>
-        <p class="value">{{ totalAssets | currency }}</p>
-      </article>
-      <article>
-        <p class="label">Debt Utilization</p>
-        <p class="value">{{ debtUtilization | number: '1.0-0' }}%</p>
-      </article>
-      <article>
-        <p class="label">Monthly Interest (Est.)</p>
-        <p class="value">{{ totalMonthlyInterest | currency }}</p>
-      </article>
-    </section>
-
     <section class="full-width-section">
-      <app-spending-insights [insights]="spendingInsights" />
+      <app-financial-plan [plan]="financialPlan" />
     </section>
 
     <section class="dashboard-tabs">
-      <button
-        type="button"
-        class="tab-button"
-        [class.active]="activeTab === 'overview'"
-        (click)="setActiveTab('overview')"
-      >
-        Overview
-      </button>
       <button
         type="button"
         class="tab-button"
@@ -74,24 +41,28 @@
       >
         Calendar
       </button>
+      <button
+        type="button"
+        class="tab-button"
+        [class.active]="activeTab === 'overview'"
+        (click)="setActiveTab('overview')"
+      >
+        Overview
+      </button>
     </section>
 
     <ng-container *ngIf="activeTab === 'overview'">
-      <section class="charts-grid">
-        <app-debt-chart [creditAccounts]="creditAccounts" />
-        <app-payoff-chart [creditAccounts]="creditAccounts" />
-      </section>
+      <section class="full-width-section support-section analysis-section">
+        <div class="section-intro">
+          <p class="section-eyebrow">Analysis</p>
+          <h3>Graphs And Detail Views</h3>
+          <p>Useful for review, but secondary to the due-date workflow in the calendar.</p>
+        </div>
 
-      <section class="full-width-section">
-        <app-cashflow-forecast [forecast]="cashflowForecast" />
-      </section>
-
-      <section class="full-width-section">
-        <app-paycheck-planner
-          [planner]="paycheckPlanner"
-          [accounts]="accounts"
-          (plannedPaymentsChanged)="onPlannedPaymentsChanged()"
-        />
+        <section class="charts-grid analysis-grid">
+          <app-debt-chart [creditAccounts]="creditAccounts" />
+          <app-payoff-chart [creditAccounts]="creditAccounts" />
+        </section>
       </section>
 
       <section class="full-width-section">
@@ -101,6 +72,20 @@
       <section class="tables-grid">
         <app-transactions-table [transactions]="transactions" />
         <app-income-summary [income]="income" />
+      </section>
+
+      <section class="full-width-section support-section">
+        <div class="section-intro">
+          <p class="section-eyebrow">Support Tool</p>
+          <h3>Paycheck Planner</h3>
+          <p>Keep this below the main plan since it helps with one paycheck decision, not the full debt strategy.</p>
+        </div>
+
+        <app-paycheck-planner
+          [planner]="paycheckPlanner"
+          [accounts]="accounts"
+          (plannedPaymentsChanged)="onPlannedPaymentsChanged()"
+        />
       </section>
     </ng-container>
 
@@ -130,20 +115,16 @@
 
       <div class="calendar-legend">
         <span class="legend-item">
-          <i class="swatch swatch-payday"></i>
-          Payday
+          <i class="swatch swatch-income"></i>
+          Income
         </span>
         <span class="legend-item">
-          <i class="swatch swatch-planned"></i>
-          Planned Payment
+          <i class="swatch swatch-obligations"></i>
+          Bills
         </span>
         <span class="legend-item">
-          <i class="swatch swatch-strategy"></i>
-          Strategy Plan
-        </span>
-        <span class="legend-item">
-          <i class="swatch swatch-estimated"></i>
-          Estimated Minimum
+          <i class="swatch swatch-recommendations"></i>
+          Recommended
         </span>
         <span class="legend-item">
           <i class="swatch swatch-paid"></i>
@@ -162,6 +143,12 @@
           [class.empty]="!cell.date"
           [class.today]="cell.isToday"
           [class.has-bills]="cell.bills.length"
+          [class.selected]="cell.dayOfMonth !== null && cell.dayOfMonth === selectedDayOfMonth"
+          [attr.role]="cell.date ? 'button' : null"
+          [attr.tabindex]="cell.date ? 0 : null"
+          (click)="openDayDetail(cell.dayOfMonth)"
+          (keydown.enter)="openDayDetail(cell.dayOfMonth)"
+          (keydown.space)="openDayDetail(cell.dayOfMonth); $event.preventDefault()"
         >
           <ng-container *ngIf="cell.date">
             <div class="cell-header">
@@ -170,76 +157,31 @@
                 class="quick-add-btn"
                 type="button"
                 title="Add payment"
-                (click)="openQuickAdd(cell.dayOfMonth!)"
+                (click)="openQuickAdd(cell.dayOfMonth!); $event.stopPropagation()"
                 *ngIf="quickAddDay !== cell.dayOfMonth"
               >+</button>
             </div>
 
-            <ul class="due-list" *ngIf="cell.bills.length">
-              <li
-                *ngFor="let bill of cell.bills"
-                [class.payday]="bill.kind === 'payday'"
-                [class.planned-payment]="bill.kind === 'planned_payment'"
-                [class.strategy-plan]="bill.kind === 'strategy_plan'"
-                [class.card-due]="bill.kind === 'card_due'"
-                [class.recurring]="bill.kind === 'recurring_expense'"
-                [class.estimated]="bill.isEstimated"
-                [class.paid-summary]="bill.kind === 'paid_summary'"
-                [attr.title]="bill.name"
-              >
-                <ng-container *ngIf="bill.kind === 'paid_summary'; else normalBill">
-                  <span class="item-name">
-                    <small class="item-kind paid-kind">✓ Paid</small>
-                    {{ bill.name }}
-                  </span>
-                  <div class="item-right">
-                    <span class="item-amount paid-amount">-{{ bill.amount | currency }}</span>
-                    <button class="action-btn undo" type="button" (click)="unmarkPaid(bill)">Undo</button>
-                  </div>
-                  <ul class="paid-breakdown">
-                    <li *ngFor="let line of bill.breakdown">
-                      <span>{{ line.label }}</span>
-                      <span>{{ line.amount | currency }}</span>
-                    </li>
-                  </ul>
-                </ng-container>
-                <ng-template #normalBill>
-                <span class="item-name">
-                  <small class="item-kind">
-                    {{ bill.kind === 'payday' ? 'Payday'
-                     : bill.kind === 'planned_payment' ? 'Planned'
-                     : bill.kind === 'strategy_plan' ? (activeStrategy | titlecase)
-                     : bill.kind === 'recurring_expense' ? 'Recurring'
-                     : 'Card Due' }}
-                  </small>
-                  {{ bill.name }}
-                  <small *ngIf="bill.strategy && bill.kind === 'planned_payment'" class="strategy-tag">{{ bill.strategy }}</small>
-                </span>
+            <div class="cal-sections" *ngIf="cell.sections.length">
+              <div *ngFor="let section of cell.sections" class="cal-section sect-{{ section.sectionKind }}">
+                <ul class="due-list compact-due-list" *ngIf="section.visibleItems.length">
+                  <li
+                    *ngFor="let bill of section.visibleItems"
+                    [class.paid]="bill.kind === 'paid_summary'"
+                    [class.critical]="cell.hasCritical && section.sectionKind === 'obligations' && bill.kind !== 'paid_summary'"
+                    [attr.title]="bill.name"
+                  >
+                    <span class="item-name">{{ billDisplayName(bill) }}</span>
+                    <div class="item-right">
+                      <span class="item-amount">{{ bill.kind === 'payday' ? '+' : '-' }}{{ bill.amount | currency: 'USD':'symbol':'1.0-0' }}</span>
+                    </div>
+                  </li>
+                </ul>
+                <p *ngIf="section.hiddenCount > 0" class="more-indicator">+{{ section.hiddenCount }} more</p>
+              </div>
+            </div>
 
-                <!-- Right column: amount + action stacked -->
-                <div class="item-right">
-                  <span class="item-amount">{{ bill.kind === 'payday' ? '+' : '-' }}{{ bill.amount | currency }}</span>
-                  <button *ngIf="bill.kind === 'card_due'" class="action-btn pay" type="button" (click)="markCardPaid(bill)">✓ Paid</button>
-                  <div *ngIf="bill.kind === 'planned_payment'" class="bill-action-group">
-                    <button class="action-btn pay" type="button" (click)="markPaymentPaid(bill.plannedPaymentId)">✓</button>
-                    <button class="action-btn del" type="button" (click)="deletePayment(bill.plannedPaymentId)">✕</button>
-                  </div>
-                </div>
-
-                <!-- Full-width badges row (card_due only) -->
-                <div *ngIf="bill.kind === 'card_due' && (bill.isEstimated || getMatchingStrategyBill(cell.bills, bill))" class="bill-tags">
-                  <span *ngIf="bill.isEstimated" class="est-badge">Est. 3% min</span>
-                  <ng-container *ngIf="getMatchingStrategyBill(cell.bills, bill) as stratBill">
-                    <span class="pay-total-badge">Pay {{ (bill.amount + stratBill.amount) | currency }} total</span>
-                  </ng-container>
-                </div>
-                </ng-template>
-              </li>
-            </ul>
-
-            <p class="no-due" *ngIf="!cell.bills.length && quickAddDay !== cell.dayOfMonth">No scheduled items</p>
-
-            <div class="quick-add-form" *ngIf="quickAddDay === cell.dayOfMonth">
+            <div class="quick-add-form" *ngIf="quickAddDay === cell.dayOfMonth" (click)="$event.stopPropagation()">
               <select
                 [value]="quickAddAccountId"
                 (change)="quickAddAccountId = $any($event.target).value"
@@ -259,13 +201,74 @@
                 <button class="btn-save" type="button" (click)="submitQuickAdd()" [disabled]="quickAddSaving">
                   {{ quickAddSaving ? '…' : 'Save' }}
                 </button>
-                <button class="btn-cancel" type="button" (click)="closeQuickAdd()">Cancel</button>
+                <button class="btn-cancel" type="button" (click)="closeQuickAdd(); $event.stopPropagation()">Cancel</button>
               </div>
               <p class="quick-add-error" *ngIf="quickAddError">{{ quickAddError }}</p>
             </div>
           </ng-container>
         </article>
       </div>
+
+      <section class="calendar-detail-panel" *ngIf="selectedCalendarCell as selectedCell">
+        <header class="calendar-detail-header">
+          <div>
+            <h4>{{ selectedCell.date | date: 'EEEE, MMMM d' }}</h4>
+            <p>{{ selectedCell.bills.length }} item{{ selectedCell.bills.length === 1 ? '' : 's' }} scheduled</p>
+          </div>
+          <button class="detail-close-btn" type="button" (click)="closeDayDetail()">Close</button>
+        </header>
+
+        <div class="calendar-detail-sections" *ngIf="selectedCell.sections.length; else emptyDayState">
+          <section
+            *ngFor="let section of selectedCell.sections"
+            class="calendar-detail-section sect-{{ section.sectionKind }}"
+          >
+            <div class="detail-section-heading">
+              <h5>{{ calendarSectionLabel(section.sectionKind) }}</h5>
+              <span>{{ section.items.length }}</span>
+            </div>
+            <ul class="due-list detail-due-list">
+              <li
+                *ngFor="let bill of section.items"
+                [class.paid]="bill.kind === 'paid_summary'"
+                [class.critical]="selectedCell.hasCritical && section.sectionKind === 'obligations' && bill.kind !== 'paid_summary'"
+                [attr.title]="bill.name"
+              >
+                <span class="item-name">{{ billDisplayName(bill) }}</span>
+                <div class="item-right">
+                  <span class="item-amount">{{ bill.kind === 'payday' ? '+' : '-' }}{{ bill.amount | currency: 'USD':'symbol':'1.0-0' }}</span>
+                  <button *ngIf="bill.kind === 'card_due'" class="action-btn pay" type="button" (click)="markCardPaid(bill); $event.stopPropagation()">✓</button>
+                  <div *ngIf="bill.kind === 'planned_payment'" class="bill-action-group">
+                    <button class="action-btn pay" type="button" (click)="markPaymentPaid(bill.plannedPaymentId); $event.stopPropagation()">✓</button>
+                    <button class="action-btn del" type="button" (click)="deletePayment(bill.plannedPaymentId); $event.stopPropagation()">✕</button>
+                  </div>
+                  <button *ngIf="bill.kind === 'paid_summary'" class="action-btn undo" type="button" (click)="unmarkPaid(bill); $event.stopPropagation()">Undo</button>
+                </div>
+                <ul *ngIf="bill.kind === 'paid_summary' && bill.breakdown?.length" class="paid-breakdown">
+                  <li *ngFor="let line of bill.breakdown">
+                    <span>{{ line.label }}</span>
+                    <span>{{ line.amount | currency: 'USD':'symbol':'1.0-0' }}</span>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+        </div>
+
+        <ng-template #emptyDayState>
+          <p class="calendar-detail-empty">No scheduled items for this day.</p>
+        </ng-template>
+      </section>
+
+      <section class="full-width-section support-section" *ngIf="activeTab === 'calendar'">
+        <div class="section-intro">
+          <p class="section-eyebrow">Support View</p>
+          <h3>Cash Flow Forecast</h3>
+          <p>Use this as a backup check after you review the due dates and required payments on the calendar.</p>
+        </div>
+
+        <app-cashflow-forecast [forecast]="cashflowForecast" />
+      </section>
     </section>
   </ng-container>
 </div>

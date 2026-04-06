@@ -1,0 +1,216 @@
+<section class="plan-shell">
+  <div class="plan-hero">
+    <div class="hero-main">
+      <p class="eyebrow">Minimums First</p>
+      <h2>Required Payments Come Before Strategy</h2>
+      <p class="hero-rule">
+        Pay fixed bills in full, cover every card minimum, then use the algorithm to decide where extra money should go.
+      </p>
+
+      <div class="required-strip">
+        <article class="required-card">
+          <p class="label">Monthly Required</p>
+          <p class="required-value">{{ plan.monthlyObligations | currency: 'USD' : 'symbol' : '1.0-0' }}</p>
+          <p class="subtext">Bills, minimums, and required monthly obligations</p>
+        </article>
+        <article class="required-card">
+          <p class="label">Reserve Held</p>
+          <p class="required-value">{{ selectedReserve | currency: 'USD' : 'symbol' : '1.0-0' }}</p>
+          <p class="subtext">{{ selectedReserveMonths | number: '1.1-1' }} months covered</p>
+        </article>
+        <article class="required-card">
+          <p class="label">Next Paycheck</p>
+          <p class="required-value income">{{ plan.nextPaycheckAmount | currency: 'USD' : 'symbol' : '1.0-0' }}</p>
+          <p class="subtext" *ngIf="plan.nextPaycheckDate">{{ plan.nextPaycheckDate | date: 'MMM d' }}</p>
+          <p class="subtext" *ngIf="!plan.nextPaycheckDate">Not scheduled</p>
+        </article>
+      </div>
+
+      <p class="hero-subtext">
+        The calendar should drive the exact dates. This section is only for reserve posture and extra-payment focus.
+      </p>
+
+      <div class="reserve-options">
+        <button
+          type="button"
+          class="reserve-option"
+          *ngFor="let option of reserveOptions"
+          [class.active]="selectedReserve === option.amount"
+          (click)="setReserve(option.amount)"
+        >
+          <span class="option-label">{{ option.label }}</span>
+          <span class="option-amount">{{ option.amount | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
+          <span class="option-description">{{ option.description }}</span>
+        </button>
+      </div>
+    </div>
+
+    <aside class="hero-action">
+      <p class="eyebrow">Recommended Focus Card</p>
+      <ng-container *ngIf="primaryAction as action; else holdCashState">
+        <h3>{{ action.target.accountName }}</h3>
+        <p class="action-amount">{{ action.amount | currency: 'USD' : 'symbol' : '1.0-0' }}</p>
+        <p class="action-copy">After required items are covered, send extra here first.</p>
+        <p class="action-reason">{{ action.target.reason }}</p>
+        <p class="action-follow-up" *ngIf="followUpAction as nextAction">
+          Then send {{ nextAction.amount | currency: 'USD' : 'symbol' : '1.0-0' }} to {{ nextAction.target.accountName }}.
+        </p>
+        <p class="action-note">This is strategy guidance only, not a required payment.</p>
+      </ng-container>
+      <ng-template #holdCashState>
+        <h3>Hold Cash</h3>
+        <p class="action-copy">Your current reserve setting leaves no optional extra payment to deploy right now.</p>
+      </ng-template>
+
+      <div class="hero-meta">
+        <div>
+          <span class="meta-label">Optional Extra</span>
+          <span class="meta-value">{{ currentDeployableAmount | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
+        </div>
+        <div>
+          <span class="meta-label">Reserve Mode</span>
+          <span class="meta-value">{{ selectedReserveMonths | number: '1.1-1' }} months</span>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <section class="metric-grid primary-metrics">
+    <article class="metric-card">
+      <p class="label">Available to Use</p>
+      <p class="value" [class.negative]="currentDeployableAmount <= 0">
+        {{ currentDeployableAmount | currency: 'USD' : 'symbol' : '1.0-0' }}
+      </p>
+    </article>
+    <article class="metric-card">
+      <p class="label">Total Debt</p>
+      <p class="value debt">{{ plan.totalDebt | currency: 'USD' : 'symbol' : '1.0-0' }}</p>
+    </article>
+    <article class="metric-card">
+      <p class="label">Total Cash</p>
+      <p class="value">{{ plan.totalCash | currency: 'USD' : 'symbol' : '1.0-0' }}</p>
+    </article>
+    <article class="metric-card">
+      <p class="label">Next Paycheck</p>
+      <p class="value income">{{ plan.nextPaycheckAmount | currency: 'USD' : 'symbol' : '1.0-0' }}</p>
+      <p class="subtext" *ngIf="plan.nextPaycheckDate">{{ plan.nextPaycheckDate | date: 'MMM d' }}</p>
+      <p class="subtext" *ngIf="!plan.nextPaycheckDate">Not scheduled</p>
+    </article>
+  </section>
+
+  <section class="metric-grid secondary-metrics">
+    <article class="metric-card compact">
+      <p class="label">Net Worth</p>
+      <p class="value" [class.negative]="plan.netWorth < 0">{{ plan.netWorth | currency: 'USD' : 'symbol' : '1.0-0' }}</p>
+    </article>
+    <article class="metric-card compact">
+      <p class="label">Debt Utilization</p>
+      <p class="value">{{ plan.debtUtilization | number: '1.0-0' }}%</p>
+    </article>
+    <article class="metric-card compact">
+      <p class="label">Monthly Interest</p>
+      <p class="value debt">{{ plan.monthlyInterestEstimate | currency: 'USD' : 'symbol' : '1.0-0' }}</p>
+    </article>
+    <article class="metric-card compact" *ngIf="plan.plannedPaymentsNext30Days > 0">
+      <p class="label">Planned Payments</p>
+      <p class="value">{{ plan.plannedPaymentsNext30Days | currency: 'USD' : 'symbol' : '1.0-0' }}</p>
+      <p class="subtext">Next 30 days</p>
+    </article>
+  </section>
+
+  <section class="plan-grid">
+    <article class="plan-card">
+      <header>
+        <h3>How To Use The App</h3>
+        <p>Keep the workflow simple so the guidance stays trustworthy.</p>
+      </header>
+      <div class="workflow-list">
+        <article class="workflow-step">
+          <span class="step-number">1</span>
+          <div>
+            <h4>Calendar first</h4>
+            <p>Use due dates as the source of truth for rent, bills, and card minimums.</p>
+          </div>
+        </article>
+        <article class="workflow-step">
+          <span class="step-number">2</span>
+          <div>
+            <h4>Pay minimums on everything</h4>
+            <p>Clear all required payments before trusting any optional allocation math.</p>
+          </div>
+        </article>
+        <article class="workflow-step">
+          <span class="step-number">3</span>
+          <div>
+            <h4>Use the focus card for extra money</h4>
+            <p>The algorithm tells you where extra debt payment should go after the required layer is covered.</p>
+          </div>
+        </article>
+      </div>
+    </article>
+
+    <article class="plan-card reserve-card">
+      <header>
+        <h3>Reserve Position</h3>
+        <p>Choose how much elevated cash stays protected before optional debt paydown.</p>
+      </header>
+      <div class="reserve-stat">
+        <span class="label">Reserve Held</span>
+        <strong>{{ selectedReserve | currency: 'USD' : 'symbol' : '1.0-0' }}</strong>
+      </div>
+      <div class="reserve-stat">
+        <span class="label">Months Covered</span>
+        <strong>{{ selectedReserveMonths | number: '1.1-1' }}</strong>
+      </div>
+      <div class="reserve-stat">
+        <span class="label">Monthly Obligations</span>
+        <strong>{{ plan.monthlyObligations | currency: 'USD' : 'symbol' : '1.0-0' }}</strong>
+      </div>
+      <p class="reserve-note" *ngIf="isWindfallMode">
+        Checking is elevated relative to a normal month. Keep your windfall reserve explicit before deploying extra cash.
+      </p>
+    </article>
+  </section>
+
+  <section class="payoff-stack">
+    <header class="section-head">
+      <div>
+        <p class="eyebrow">Optional Extra</p>
+        <h3>After Minimums, Put Extra Here</h3>
+      </div>
+      <p class="section-copy">These are algorithm-ranked targets for extra debt payments only.</p>
+    </header>
+
+    <div class="payoff-list" *ngIf="allocatedActions.length; else noActions">
+      <article class="payoff-row" *ngFor="let action of allocatedActions">
+        <div class="priority-pill">{{ action.target.priority }}</div>
+        <div class="payoff-main">
+          <div class="payoff-title-row">
+            <h4>{{ action.target.accountName }}</h4>
+            <span class="payoff-chip">{{ action.target.apr | number: '1.0-2' }}% APR</span>
+          </div>
+          <p class="payoff-reason">{{ action.target.reason }}</p>
+          <div class="payoff-meta">
+            <span>Balance {{ action.target.balance | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
+            <span>Minimum {{ action.target.minimumPayment | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
+            <span *ngIf="action.target.dueDate">Due {{ action.target.dueDate | date: 'MMM d' }}</span>
+          </div>
+        </div>
+        <div class="payoff-amount">
+          <span class="label">Plan Now</span>
+          <strong>{{ action.amount | currency: 'USD' : 'symbol' : '1.0-0' }}</strong>
+        </div>
+      </article>
+    </div>
+
+    <ng-template #noActions>
+      <p class="empty-state">No extra debt deployment is available at this reserve level.</p>
+    </ng-template>
+  </section>
+
+  <section class="warnings" *ngIf="plan.warnings.length">
+    <article class="warning" *ngFor="let warning of plan.warnings">
+      {{ warning }}
+    </article>
+  </section>
+</section>
