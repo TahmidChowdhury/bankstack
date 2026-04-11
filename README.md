@@ -56,6 +56,9 @@ cd backend && npm install
 
 # Install frontend dependencies
 cd ../frontend && npm install
+
+# Return to the root when you want to start both apps together
+cd ..
 ```
 
 ### 2. Configure Environment Variables
@@ -89,7 +92,18 @@ npx prisma migrate dev --name init
 npx prisma db push
 ```
 
-### 4. Start the Backend
+### 4. Start Both Apps
+
+```bash
+npm run start
+```
+
+This starts:
+
+- the NestJS backend on **http://localhost:3000**
+- the Angular frontend on **http://localhost:4200**
+
+### 5. Start Each App Individually
 
 ```bash
 cd backend
@@ -97,8 +111,6 @@ npm run start:dev
 ```
 
 The NestJS server starts on **http://localhost:3000**.
-
-### 5. Start the Frontend
 
 ```bash
 cd frontend
@@ -242,6 +254,14 @@ model BalanceSnapshot {
 ---
 
 ## Development
+
+### Root Commands
+
+```bash
+npm run start         # Start backend + frontend together
+npm run start:backend # Start only the backend from the repo root
+npm run start:frontend # Start only the frontend from the repo root
+```
 
 ### Backend Commands
 
