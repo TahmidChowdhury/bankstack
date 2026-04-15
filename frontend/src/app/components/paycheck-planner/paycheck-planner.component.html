@@ -1,24 +1,66 @@
 <section class="panel">
-  <header>
-    <h3>Paycheck Planner</h3>
-    <p>Allocate your next paycheck while covering obligations first.</p>
+  <header class="panel-header">
+    <div>
+      <p class="eyebrow">Support Tool</p>
+      <h3>Paycheck Allocation</h3>
+      <p>Use this only for the next paycheck decision, not your overall debt plan.</p>
+    </div>
+    <button class="btn-ghost details-toggle" type="button" (click)="toggleDetails()">
+      {{ detailsExpanded ? 'Hide details' : 'Show details' }}
+    </button>
   </header>
 
-  <div class="topline">
-    <article>
+  <div class="summary-strip">
+    <article class="summary-card">
       <p class="label">Next Paycheck</p>
       <p class="value">{{ effectiveAmount | currency }}</p>
-      <p class="subtext">{{ planner.paycheckDate ? (planner.paycheckDate | date: 'MMMM d') : 'Not scheduled' }}</p>
+      <p class="subtext">{{ planner.paycheckDate ? (planner.paycheckDate | date: 'MMM d') : 'Not scheduled' }}</p>
     </article>
-    <article>
-      <p class="label">Total Required</p>
-      <p class="value debt">{{ planner.requiredPayments.totalRequired | currency }}</p>
-      <p class="subtext">Bills + minimums before next paycheck</p>
+    <article class="summary-card">
+      <p class="label">Due Before Payday</p>
+      <p class="value debt">{{ dueBeforePaycheck | currency }}</p>
+      <p class="subtext">Bills + minimums</p>
+    </article>
+    <article class="summary-card">
+      <p class="label">Extra Toward Debt</p>
+      <p class="value income">{{ effectiveAllocation.extraDebtPayment | currency }}</p>
+      <p class="subtext">After living costs and buffer</p>
+    </article>
+    <article class="summary-card">
+      <p class="label">Buffer Held</p>
+      <p class="value">{{ holdAfterAllocation | currency }}</p>
+      <p class="subtext">Left after allocation</p>
     </article>
   </div>
 
+  <div class="recommendation-card" *ngIf="planner.recommendedCard as card">
+    <div class="recommendation-main">
+      <p class="eyebrow">Next Move</p>
+      <h4>{{ card.accountName }}</h4>
+      <p class="recommendation-copy">
+        Send {{ effectiveAllocation.extraDebtPayment | currency }} from the next paycheck here first.
+      </p>
+      <p class="subtext">APR {{ card.apr | number: '1.2-2' }}% · Balance {{ card.currentBalance | currency }}</p>
+    </div>
+
+    <div class="recommendation-actions">
+      <button
+        class="btn-ghost"
+        type="button"
+        (click)="simulateExtraPayment()"
+        [disabled]="effectiveAllocation.extraDebtPayment <= 0"
+      >
+        Preview Impact
+      </button>
+      <button class="btn" type="button" (click)="applyPaymentSimulation()" [disabled]="applyingSimulation">
+        {{ applyingSimulation ? 'Saving...' : 'Save Planned Payment' }}
+      </button>
+      <p class="subtext" *ngIf="applyMessage">{{ applyMessage }}</p>
+    </div>
+  </div>
+
   <div class="manual-amount-row">
-    <label for="manual-amount">Got paid a different amount?</label>
+    <label for="manual-amount">Use a different paycheck amount</label>
     <div class="manual-amount-input-wrap">
       <span class="currency-prefix">$</span>
       <input
@@ -31,52 +73,48 @@
         (input)="onManualAmountChange($event)"
       />
     </div>
-    <button *ngIf="manualAmount !== null" class="btn-ghost" type="button" (click)="manualAmount = null; simulation = null; applyMessage = null">Reset</button>
+    <button
+      *ngIf="manualAmount !== null"
+      class="btn-ghost"
+      type="button"
+      (click)="manualAmount = null; simulation = null; applyMessage = null"
+    >Reset</button>
   </div>
 
-  <section class="block">
-    <h4>Required Payments</h4>
-    <dl>
-      <div><dt>Recurring Bills</dt><dd>{{ planner.requiredPayments.recurringBills | currency }}</dd></div>
-      <div><dt>Credit Card Minimums</dt><dd>{{ planner.requiredPayments.creditCardMinimums | currency }}</dd></div>
-      <div class="total"><dt>Total Required</dt><dd>{{ planner.requiredPayments.totalRequired | currency }}</dd></div>
-    </dl>
-    <ul class="minimum-cards" *ngIf="planner.requiredPayments.minimumPaymentCards.length">
-      <li *ngFor="let card of planner.requiredPayments.minimumPaymentCards">
-        <span>{{ card.accountName }} (due {{ card.dueDayOfMonth }})</span>
-        <span>{{ card.amount | currency }}</span>
-      </li>
-    </ul>
-  </section>
+  <div class="detail-grid" *ngIf="detailsExpanded">
+    <section class="block">
+      <h5>Required Payments</h5>
+      <dl>
+        <div><dt>Recurring Bills</dt><dd>{{ planner.requiredPayments.recurringBills | currency }}</dd></div>
+        <div><dt>Card Minimums</dt><dd>{{ planner.requiredPayments.creditCardMinimums | currency }}</dd></div>
+        <div class="total"><dt>Total Required</dt><dd>{{ planner.requiredPayments.totalRequired | currency }}</dd></div>
+      </dl>
+      <ul class="minimum-cards" *ngIf="planner.requiredPayments.minimumPaymentCards.length">
+        <li *ngFor="let card of planner.requiredPayments.minimumPaymentCards">
+          <span>{{ card.accountName }} · due {{ card.dueDayOfMonth }}</span>
+          <span>{{ card.amount | currency }}</span>
+        </li>
+      </ul>
+    </section>
 
-  <section class="block">
-    <h4>Suggested Allocation</h4>
-    <dl>
-      <div><dt>Recurring Bills</dt><dd>{{ effectiveAllocation.recurringBills | currency }}</dd></div>
-      <div><dt>Minimum Payments</dt><dd>{{ effectiveAllocation.creditCardMinimums | currency }}</dd></div>
-      <div><dt>Living Expenses</dt><dd>{{ effectiveAllocation.livingExpenses | currency }}</dd></div>
-      <div><dt>Extra Toward Debt</dt><dd>{{ effectiveAllocation.extraDebtPayment | currency }}</dd></div>
-      <div><dt>Remaining Buffer</dt><dd>{{ effectiveAllocation.remainingBuffer | currency }}</dd></div>
-    </dl>
-  </section>
+    <section class="block">
+      <h5>Allocation Breakdown</h5>
+      <dl>
+        <div><dt>Recurring Bills</dt><dd>{{ effectiveAllocation.recurringBills | currency }}</dd></div>
+        <div><dt>Minimum Payments</dt><dd>{{ effectiveAllocation.creditCardMinimums | currency }}</dd></div>
+        <div><dt>Living Expenses</dt><dd>{{ effectiveAllocation.livingExpenses | currency }}</dd></div>
+        <div><dt>Extra Toward Debt</dt><dd>{{ effectiveAllocation.extraDebtPayment | currency }}</dd></div>
+        <div><dt>Remaining Buffer</dt><dd>{{ effectiveAllocation.remainingBuffer | currency }}</dd></div>
+      </dl>
+    </section>
+  </div>
 
-  <section class="block" *ngIf="planner.recommendedCard as card">
-    <h4>Recommended Card to Pay</h4>
-    <p class="card-name">{{ card.accountName }}</p>
-    <p class="subtext">APR {{ card.apr | number: '1.2-2' }}% · Balance {{ card.currentBalance | currency }}</p>
-
-    <button class="btn" type="button" (click)="applyPaymentSimulation()" [disabled]="applyingSimulation">
-      {{ applyingSimulation ? 'Saving...' : 'Apply Payment Simulation' }}
-    </button>
-    <p class="subtext" *ngIf="applyMessage">{{ applyMessage }}</p>
-
-    <div class="simulation" *ngIf="simulation">
-      <p>Interest Saved: <strong>{{ simulation.interestSaved | currency }}</strong></p>
-      <p>Timeline: <strong>{{ simulation.baselineMonths }}</strong> to <strong>{{ simulation.improvedMonths }}</strong> months</p>
-      <div class="progress-track">
-        <div class="progress-fill" [style.width.%]="payoffAccelerationPercent"></div>
-      </div>
-      <p class="subtext">Payoff acceleration: {{ payoffAccelerationPercent | number: '1.0-0' }}%</p>
+  <section class="simulation" *ngIf="simulation">
+    <p>Interest Saved: <strong>{{ simulation.interestSaved | currency }}</strong></p>
+    <p>Timeline: <strong>{{ simulation.baselineMonths }}</strong> to <strong>{{ simulation.improvedMonths }}</strong> months</p>
+    <div class="progress-track">
+      <div class="progress-fill" [style.width.%]="payoffAccelerationPercent"></div>
     </div>
+    <p class="subtext">Payoff acceleration: {{ payoffAccelerationPercent | number: '1.0-0' }}%</p>
   </section>
 </section>

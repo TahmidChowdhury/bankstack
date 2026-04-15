@@ -204,6 +204,57 @@ export interface PaycheckPlanner {
   } | null;
 }
 
+export interface FinancialPlanTarget {
+  accountId: string;
+  accountName: string;
+  balance: number;
+  apr: number;
+  minimumPayment: number;
+  dueDate: string | null;
+  daysUntilDue: number | null;
+  priority: number;
+  reason: string;
+}
+
+export interface FinancialPlan {
+  totalCash: number;
+  totalDebt: number;
+  netWorth: number;
+  deployableNow: number;
+  reserveFloor: number;
+  reserveTarget: number;
+  reserveCautious: number;
+  reserveMonthsCovered: number;
+  nextPaycheckDate: string | null;
+  nextPaycheckAmount: number;
+  monthlyObligations: number;
+  monthlyInterestEstimate: number;
+  debtUtilization: number;
+  plannedPaymentsNext30Days: number;
+  topMetrics: {
+    availableToDeploy: number;
+    totalDebt: number;
+    totalCash: number;
+    nextPaycheck: number;
+  };
+  secondaryMetrics: {
+    netWorth: number;
+    debtUtilization: number;
+    monthlyInterest: number;
+    plannedPayments: number;
+  };
+  spending: {
+    remainingToSpend: number;
+    dailyBudget: number;
+    daysRemaining: number;
+    fixedObligations: number;
+    spentToDate: number;
+    monthLabel: string;
+  };
+  payoffTargets: FinancialPlanTarget[];
+  warnings: string[];
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -254,6 +305,16 @@ export class ApiService {
 
   getPaycheckPlanner(): Observable<PaycheckPlanner> {
     return this.http.get<PaycheckPlanner>(`${this.baseUrl}/paycheck/planner`);
+  }
+
+  getFinancialPlan(reserveOverride?: number): Observable<FinancialPlan> {
+    if (reserveOverride != null) {
+      return this.http.get<FinancialPlan>(`${this.baseUrl}/financial-plan`, {
+        params: { reserveOverride },
+      });
+    }
+
+    return this.http.get<FinancialPlan>(`${this.baseUrl}/financial-plan`);
   }
 
   calculatePayoffStrategy(monthlyPayment: number): Observable<PayoffStrategy> {

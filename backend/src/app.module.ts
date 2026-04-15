@@ -11,6 +11,7 @@ import { CashflowModule } from './cashflow/cashflow.module';
 import { PaycheckModule } from './paycheck/paycheck.module';
 import { PlannedPaymentsModule } from './planned-payments/planned-payments.module';
 import { InsightsModule } from './insights/insights.module';
+import { FinancialPlanModule } from './financial-plan/financial-plan.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { InsightsModule } from './insights/insights.module';
     PaycheckModule,
     PlannedPaymentsModule,
     InsightsModule,
+    FinancialPlanModule,
   ],
 })
 export class AppModule implements NestModule {

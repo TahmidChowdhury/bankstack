@@ -6,17 +6,15 @@ import {
   ApiService,
   CashflowForecast,
   DebtPlanResponse,
-  DebtSummary,
+  FinancialPlan,
   IncomeSummary,
   PaycheckPlanner,
   PlaidItem,
   RecurringExpenseDay,
-  SpendingInsights,
   Transaction,
 } from '../services/api.service';
 import { PlannedPayment, PlannedPaymentsService } from '../services/planned-payments.service';
 import { PlaidLinkService } from '../services/plaid-link.service';
-import { DashboardSummaryComponent } from '../components/dashboard-summary/dashboard-summary.component';
 import { DebtChartComponent } from '../components/debt-chart/debt-chart.component';
 import { PayoffChartComponent } from '../components/payoff-chart/payoff-chart.component';
 import { AccountsTableComponent } from '../components/accounts-table/accounts-table.component';
@@ -24,7 +22,7 @@ import { TransactionsTableComponent } from '../components/transactions-table/tra
 import { IncomeSummaryComponent } from '../components/income-summary/income-summary.component';
 import { CashflowForecastComponent } from '../components/cashflow-forecast/cashflow-forecast.component';
 import { PaycheckPlannerComponent } from '../components/paycheck-planner/paycheck-planner.component';
-import { SpendingInsightsComponent } from '../components/spending-insights/spending-insights.component';
+import { FinancialPlanComponent } from '../components/financial-plan/financial-plan.component';
 
 type CalendarBill = {
   name: string;
@@ -39,11 +37,20 @@ type CalendarBill = {
   paidPaymentIds?: string[];
 };
 
+type CalendarSection = {
+  sectionKind: 'income' | 'obligations' | 'recommendations';
+  items: CalendarBill[];
+  visibleItems: CalendarBill[];
+  hiddenCount: number;
+};
+
 type CalendarCell = {
   date: Date | null;
   dayOfMonth: number | null;
   isToday: boolean;
   bills: CalendarBill[];
+  sections: CalendarSection[];
+  hasCritical: boolean;
 };
 
 @Component({
@@ -51,7 +58,6 @@ type CalendarCell = {
   standalone: true,
   imports: [
     CommonModule,
-    DashboardSummaryComponent,
     DebtChartComponent,
     PayoffChartComponent,
     AccountsTableComponent,
@@ -59,30 +65,18 @@ type CalendarCell = {
     IncomeSummaryComponent,
     CashflowForecastComponent,
     PaycheckPlannerComponent,
-    SpendingInsightsComponent,
+    FinancialPlanComponent,
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
 export class DashboardComponent implements OnInit {
   readonly weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  summary: DebtSummary = { totalDebt: 0, totalCash: 0, netWorth: 0 };
   income: IncomeSummary = {
     totalMonthlyIncome: 0,
     nextPaycheckDate: null,
     nextPaycheckAmount: 0,
     sources: [],
-  };
-  spendingInsights: SpendingInsights = {
-    month: '',
-    asOfDate: '',
-    incomePlanned: 0,
-    fixedObligations: 0,
-    spentToDate: 0,
-    remainingToSpend: 0,
-    safePerDay: 0,
-    daysRemaining: 0,
-    categoryBreakdown: [],
   };
   cashflowForecast: CashflowForecast = {
     incomeNext30Days: 0,
@@ -114,6 +108,44 @@ export class DashboardComponent implements OnInit {
     },
     recommendedCard: null,
   };
+  financialPlan: FinancialPlan = {
+    totalCash: 0,
+    totalDebt: 0,
+    netWorth: 0,
+    deployableNow: 0,
+    reserveFloor: 0,
+    reserveTarget: 0,
+    reserveCautious: 0,
+    reserveMonthsCovered: 0,
+    nextPaycheckDate: null,
+    nextPaycheckAmount: 0,
+    monthlyObligations: 0,
+    monthlyInterestEstimate: 0,
+    debtUtilization: 0,
+    plannedPaymentsNext30Days: 0,
+    topMetrics: {
+      availableToDeploy: 0,
+      totalDebt: 0,
+      totalCash: 0,
+      nextPaycheck: 0,
+    },
+    secondaryMetrics: {
+      netWorth: 0,
+      debtUtilization: 0,
+      monthlyInterest: 0,
+      plannedPayments: 0,
+    },
+    spending: {
+      remainingToSpend: 0,
+      dailyBudget: 0,
+      daysRemaining: 0,
+      fixedObligations: 0,
+      spentToDate: 0,
+      monthLabel: '',
+    },
+    payoffTargets: [],
+    warnings: [],
+  };
   accounts: Account[] = [];
   transactions: Transaction[] = [];
   recurringExpenses: RecurringExpenseDay[] = [];
@@ -121,7 +153,7 @@ export class DashboardComponent implements OnInit {
   loading = true;
   preparingPlaid = false;
   connectingBank = false;
-  activeTab: 'overview' | 'calendar' = 'overview';
+  activeTab: 'overview' | 'calendar' = 'calendar';
   error: string | null = null;
 
   syncing = false;
@@ -131,6 +163,7 @@ export class DashboardComponent implements OnInit {
   activeStrategy: 'avalanche' | 'snowball' = 'avalanche';
   debtPlanData: DebtPlanResponse | null = null;
   quickAddDay: number | null = null;
+  selectedDayOfMonth: number | null = null;
   quickAddAccountId = '';
   quickAddAmount = '';
   quickAddSaving = false;
@@ -154,11 +187,10 @@ export class DashboardComponent implements OnInit {
     this.error = null;
 
     forkJoin({
-      summary: this.api.getDebtSummary(),
       accounts: this.api.getAccounts(),
       transactions: this.api.getTransactions(),
       income: this.api.getIncome(),
-      spendingInsights: this.api.getSpendingInsights(),
+      financialPlan: this.api.getFinancialPlan(),
       cashflowForecast: this.api.getCashflowForecast(this.activeStrategy),
       paycheckPlanner: this.api.getPaycheckPlanner(),
       recurringExpenses: this.api.getRecurringExpenses(),
@@ -166,22 +198,20 @@ export class DashboardComponent implements OnInit {
       plaidItems: this.api.getPlaidItems(),
     }).subscribe({
       next: ({
-        summary,
         accounts,
         transactions,
         income,
-        spendingInsights,
+        financialPlan,
         cashflowForecast,
         paycheckPlanner,
         recurringExpenses,
         plannedPayments,
         plaidItems,
       }) => {
-        this.summary = summary;
         this.accounts = accounts;
         this.transactions = transactions.slice(0, 10);
         this.income = income;
-        this.spendingInsights = spendingInsights;
+        this.financialPlan = financialPlan;
         this.cashflowForecast = cashflowForecast;
         this.paycheckPlanner = paycheckPlanner;
         this.recurringExpenses = recurringExpenses;
@@ -219,49 +249,6 @@ export class DashboardComponent implements OnInit {
 
   get creditAccounts(): Account[] {
     return this.accounts.filter((account) => account.type === 'credit');
-  }
-
-  getMatchingStrategyBill(bills: CalendarBill[], cardDueBill: CalendarBill): CalendarBill | null {
-    if (cardDueBill.kind !== 'card_due') return null;
-    const cardName = cardDueBill.name.replace(/ payment due$/, '');
-    return bills.find((b) => b.kind === 'strategy_plan' && b.name === cardName) ?? null;
-  }
-
-  get totalAssets(): number {
-    return this.accounts
-      .filter((account) => account.type !== 'credit')
-      .reduce((sum, account) => sum + Math.max(account.currentBalance, 0), 0);
-  }
-
-  get totalMonthlyInterest(): number {
-    return this.creditAccounts.reduce((sum, account) => {
-      if (!account.apr || account.currentBalance <= 0) {
-        return sum;
-      }
-      return sum + account.currentBalance * (account.apr / 100 / 12);
-    }, 0);
-  }
-
-  get debtUtilization(): number {
-    const creditWithLimits = this.creditAccounts.filter(
-      (account) => account.availableBalance != null,
-    );
-
-    const totalUsed = creditWithLimits.reduce(
-      (sum, account) => sum + Math.max(account.currentBalance, 0),
-      0,
-    );
-    const totalLimit = creditWithLimits.reduce(
-      (sum, account) =>
-        sum + Math.max(account.currentBalance, 0) + Math.max(account.availableBalance ?? 0, 0),
-      0,
-    );
-
-    if (totalLimit <= 0) {
-      return 0;
-    }
-
-    return (totalUsed / totalLimit) * 100;
   }
 
   get currentMonthLabel(): string {
@@ -315,6 +302,7 @@ export class DashboardComponent implements OnInit {
     const firstWeekday = monthStart.getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const today = this.startOfDay(new Date());
+    const threeDaysOut = new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000);
 
     const billsByDay = new Map<number, CalendarBill[]>();
     for (const bill of this.currentMonthBills) {
@@ -327,24 +315,39 @@ export class DashboardComponent implements OnInit {
     const cells: CalendarCell[] = [];
 
     for (let i = 0; i < firstWeekday; i++) {
-      cells.push({ date: null, dayOfMonth: null, isToday: false, bills: [] });
+      cells.push({ date: null, dayOfMonth: null, isToday: false, bills: [], sections: [], hasCritical: false });
     }
 
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(year, month, day);
+      const bills = billsByDay.get(day) ?? [];
+      const hasCritical =
+        date >= today &&
+        date <= threeDaysOut &&
+        bills.some((bill) => bill.kind === 'card_due' || bill.kind === 'recurring_expense');
       cells.push({
         date,
         dayOfMonth: day,
         isToday: date.getTime() === today.getTime(),
-        bills: billsByDay.get(day) ?? [],
+        bills,
+        sections: this.buildCalendarSections(bills),
+        hasCritical,
       });
     }
 
     while (cells.length % 7 !== 0) {
-      cells.push({ date: null, dayOfMonth: null, isToday: false, bills: [] });
+      cells.push({ date: null, dayOfMonth: null, isToday: false, bills: [], sections: [], hasCritical: false });
     }
 
     return cells;
+  }
+
+  get selectedCalendarCell(): CalendarCell | null {
+    if (this.selectedDayOfMonth == null) {
+      return null;
+    }
+
+    return this.calendarCells.find((cell) => cell.dayOfMonth === this.selectedDayOfMonth) ?? null;
   }
 
   setActiveTab(tab: 'overview' | 'calendar'): void {
@@ -458,6 +461,7 @@ export class DashboardComponent implements OnInit {
   }
 
   openQuickAdd(day: number): void {
+    this.selectedDayOfMonth = day;
     this.quickAddDay = day;
     this.quickAddAccountId = this.creditAccounts[0]?.id ?? '';
     this.quickAddAmount = '';
@@ -467,6 +471,16 @@ export class DashboardComponent implements OnInit {
   closeQuickAdd(): void {
     this.quickAddDay = null;
     this.quickAddError = null;
+  }
+
+  openDayDetail(day: number | null): void {
+    if (day == null) return;
+    this.selectedDayOfMonth = this.selectedDayOfMonth === day ? null : day;
+  }
+
+  closeDayDetail(): void {
+    this.selectedDayOfMonth = null;
+    this.closeQuickAdd();
   }
 
   submitQuickAdd(): void {
@@ -714,6 +728,71 @@ export class DashboardComponent implements OnInit {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+  }
+
+  billDisplayName(bill: CalendarBill): string {
+    switch (bill.kind) {
+      case 'card_due':
+        return `${bill.name.replace(/ payment due$/i, '')} minimum`;
+      case 'planned_payment':
+        return `Planned: ${bill.name.replace(/^Planned: /i, '')}`;
+      case 'strategy_plan':
+        return `Extra: ${bill.name}`;
+      case 'payday':
+        return this.billBaseName(bill);
+      default:
+        return this.billBaseName(bill);
+    }
+  }
+
+  calendarSectionLabel(sectionKind: CalendarSection['sectionKind']): string {
+    switch (sectionKind) {
+      case 'income':
+        return 'Income';
+      case 'obligations':
+        return 'Bills';
+      case 'recommendations':
+        return 'Recommended Payments';
+    }
+  }
+
+  private billBaseName(bill: CalendarBill): string {
+    switch (bill.kind) {
+      case 'payday':
+        return bill.name.replace(/ payday$/i, '');
+      case 'planned_payment':
+        return bill.name.replace(/^Planned: /i, '');
+      case 'card_due':
+        return bill.name.replace(/ payment due$/i, '');
+      default:
+        return bill.name;
+    }
+  }
+
+  private buildCalendarSections(bills: CalendarBill[]): CalendarSection[] {
+    const MAX = 3;
+    const defs: { sectionKind: CalendarSection['sectionKind']; kinds: CalendarBill['kind'][] }[] = [
+      { sectionKind: 'income', kinds: ['payday'] },
+      { sectionKind: 'obligations', kinds: ['card_due', 'recurring_expense', 'paid_summary'] },
+      { sectionKind: 'recommendations', kinds: ['planned_payment', 'strategy_plan'] },
+    ];
+    const sections: CalendarSection[] = [];
+    let remainingVisible = MAX;
+
+    for (const def of defs) {
+      const items = bills.filter((bill) => (def.kinds as string[]).includes(bill.kind));
+      if (items.length === 0) continue;
+      const visibleCount = Math.max(0, Math.min(items.length, remainingVisible));
+      sections.push({
+        sectionKind: def.sectionKind,
+        items,
+        visibleItems: items.slice(0, visibleCount),
+        hiddenCount: Math.max(0, items.length - visibleCount),
+      });
+      remainingVisible = Math.max(0, remainingVisible - visibleCount);
+    }
+
+    return sections;
   }
 
   private startOfDay(date: Date): Date {
