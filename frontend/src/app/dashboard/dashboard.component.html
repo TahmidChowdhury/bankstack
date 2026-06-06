@@ -268,7 +268,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let row of paymentEntryRows">
+              <tr *ngFor="let row of paymentEntryRows; trackBy: trackByPaymentRow">
                 <td>
                   <div class="payment-row-title">
                     <strong>{{ row.accountName }}</strong>

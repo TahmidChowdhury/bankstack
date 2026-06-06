@@ -516,6 +516,10 @@ export class DashboardComponent implements OnInit {
     return suggestedTotal > 0 ? this.formatAmountInput(suggestedTotal) : '';
   }
 
+  trackByPaymentRow(_index: number, row: PaymentEntryRow): string {
+    return row.key;
+  }
+
   selectedFundingAccountId(row: PaymentEntryRow): string {
     return this.paymentDraftSources[row.key] ?? row.fundingAccountId;
   }
