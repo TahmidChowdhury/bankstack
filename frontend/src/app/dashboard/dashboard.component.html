@@ -87,6 +87,25 @@
           (plannedPaymentsChanged)="onPlannedPaymentsChanged()"
         />
       </section>
+
+      <section class="full-width-section support-section advanced-tools-section">
+        <div class="section-intro">
+          <p class="section-eyebrow">Advanced Tools</p>
+          <h3>Optional Strategy Simulators</h3>
+          <p>Use these occasionally when you want deeper payoff simulations. They are intentionally outside the primary weekly workflow.</p>
+        </div>
+
+        <div class="advanced-tools-grid">
+          <a class="advanced-tool-card" href="/payoff-calculator">
+            <h4>Payoff Calculator</h4>
+            <p>Quick monthly-payment what-if simulation.</p>
+          </a>
+          <a class="advanced-tool-card" href="/debt-plan">
+            <h4>Debt Plan</h4>
+            <p>12-month strategy plan with apply-to-calendar actions.</p>
+          </a>
+        </div>
+      </section>
     </ng-container>
 
     <section class="calendar-panel" *ngIf="activeTab === 'calendar'">

@@ -22,6 +22,9 @@ Use it as the first stop before exploring the full codebase.
 - `/dashboard`: operational decision surface
 - `/accounts`: account metadata quality control
 - `/transactions`: activity history
+
+## Secondary Surfaces
+
 - `/debt-plan`: longer-range payoff simulation
 - `/payoff-calculator`: strategy sandbox
 

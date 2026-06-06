@@ -105,10 +105,18 @@ Mitigation: Hide first, retire later after observation period.
 
 ## Execution Checklist
 
-- [ ] Phase 1 PR: nav declutter + advanced tools entry point
-- [ ] Phase 1 QA: verify routes still reachable directly
+- [x] Phase 1 PR: nav declutter + advanced tools entry point
+- [x] Phase 1 QA: verify routes still reachable directly
 - [ ] Phase 2 PR: merge required insights into Dashboard
 - [ ] Phase 3 decision: retire or keep secondary routes
+
+## Phase 1 Implementation Status
+
+Implemented in the `initiative/simplify-surface-area` branch:
+
+- Sidebar now keeps only primary workflow surfaces: Dashboard, Accounts, Transactions.
+- `payoff-calculator` and `debt-plan` routes are still reachable directly.
+- Dashboard Overview now includes an "Advanced Tools" section linking to both secondary simulators.
 
 ## Owner Notes
 
