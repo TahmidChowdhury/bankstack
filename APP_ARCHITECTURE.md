@@ -75,6 +75,14 @@ If compile errors mention unknown Prisma fields, run:
 - Prioritize clarity in labels over adding controls.
 - Add tests only around business rules that can regress.
 
+## Simplification Initiative
+
+See `docs/SIMPLIFICATION_INITIATIVE.md` for the current declutter plan that prioritizes:
+
+- Accounts updates
+- Dashboard calendar workflow
+- Secondary treatment of advanced strategy tools
+
 ## Near-Term Risk Areas
 
 - Two schema files can drift.
