@@ -37,6 +37,7 @@ model Account {
   institution      String
   currentBalance   Float
   availableBalance Float?
+  creditLimit      Float?
   minimumPayment   Float?
   dueDayOfMonth    Int?
   apr              Float?

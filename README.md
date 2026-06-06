@@ -45,6 +45,29 @@ bankstack/
 
 ## Setup Instructions
 
+## Daily Development (Recommended)
+
+Use the root command below as the single default workflow:
+
+```bash
+npm run dev
+```
+
+This runs both services through `scripts/start.js`:
+
+- backend: NestJS watch mode on http://localhost:3000
+- frontend: Angular serve on http://localhost:4200
+
+If you only need one service:
+
+```bash
+npm run dev --prefix backend
+npm run start --prefix frontend
+```
+
+For concise system notes, see `APP_ARCHITECTURE.md`.
+For local, personal notes (Obsidian-friendly), use `notes/`.
+
 ### 1. Clone and Install Dependencies
 
 ```bash

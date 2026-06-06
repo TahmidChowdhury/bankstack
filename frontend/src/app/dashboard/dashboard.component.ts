@@ -30,6 +30,7 @@ type CalendarBill = {
   dueDate: string;
   kind: 'card_due' | 'recurring_expense' | 'payday' | 'planned_payment' | 'strategy_plan' | 'paid_summary';
   isEstimated?: boolean;
+  isHandled?: boolean;
   plannedPaymentId?: string;
   strategy?: string;
   internalAccountId?: string;
@@ -51,6 +52,21 @@ type CalendarCell = {
   bills: CalendarBill[];
   sections: CalendarSection[];
   hasCritical: boolean;
+};
+
+type PaymentEntryRow = {
+  key: string;
+  accountId: string;
+  accountName: string;
+  balance: number;
+  dueDate: string;
+  minimumAmount: number;
+  suggestedExtraAmount: number;
+  plannedAmount: number;
+  paidAmount: number;
+  fundingAccountId: string;
+  plannedPaymentIds: string[];
+  paidPaymentIds: string[];
 };
 
 @Component({
@@ -168,6 +184,11 @@ export class DashboardComponent implements OnInit {
   quickAddAmount = '';
   quickAddSaving = false;
   quickAddError: string | null = null;
+  paymentDraftAmounts: Record<string, string> = {};
+  paymentDraftSources: Record<string, string> = {};
+  paymentSavingStates: Record<string, boolean> = {};
+  paymentMessages: Record<string, string | null> = {};
+  paymentErrors: Record<string, string | null> = {};
 
   constructor(
     private api: ApiService,
@@ -251,6 +272,10 @@ export class DashboardComponent implements OnInit {
     return this.accounts.filter((account) => account.type === 'credit');
   }
 
+  get depositoryAccounts(): Account[] {
+    return this.accounts.filter((account) => account.type === 'depository');
+  }
+
   get currentMonthLabel(): string {
     const monthStart = this.currentMonthStart();
     return monthStart.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
@@ -289,6 +314,87 @@ export class DashboardComponent implements OnInit {
 
   get plannedPaymentsCount(): number {
     return this.plannedPayments.filter((payment) => this.isPlannedStatus(payment.status)).length;
+  }
+
+  get paymentEntryRows(): PaymentEntryRow[] {
+    const monthStart = this.currentMonthStart();
+    const year = monthStart.getFullYear();
+    const month = monthStart.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    return this.creditAccounts
+      .filter((account) => account.dueDayOfMonth != null)
+      .map((account) => {
+        const day = Math.min(Math.max(account.dueDayOfMonth ?? 1, 1), daysInMonth);
+        const dueDate = this.formatLocalDate(new Date(year, month, day));
+        const hasSeededMinimum = (account.minimumPayment ?? 0) > 0;
+        const minimumAmount = hasSeededMinimum
+          ? Math.max(account.minimumPayment ?? 0, 0)
+          : Number(Math.max(account.currentBalance * 0.03, 0).toFixed(2));
+        const suggestedExtraAmount = this.getSuggestedExtraAmount(account.name, dueDate);
+        const matchingPlannedPayments = this.plannedPayments.filter(
+          (payment) =>
+            this.isPlannedStatus(payment.status) &&
+            payment.internalAccountId === account.id &&
+            payment.date === dueDate,
+        );
+        const matchingPaidPayments = this.plannedPayments.filter(
+          (payment) =>
+            payment.status.toUpperCase() === 'PAID' &&
+            payment.internalAccountId === account.id &&
+            payment.date === dueDate,
+        );
+        const key = `${account.id}-${dueDate}`;
+
+        return {
+          key,
+          accountId: account.id,
+          accountName: account.name,
+          balance: Math.max(account.currentBalance, 0),
+          dueDate,
+          minimumAmount,
+          suggestedExtraAmount,
+          plannedAmount: matchingPlannedPayments.reduce((sum, payment) => sum + payment.amount, 0),
+          paidAmount: matchingPaidPayments.reduce((sum, payment) => sum + payment.amount, 0),
+          fundingAccountId: this.resolveFundingAccountId(
+            key,
+            [...matchingPlannedPayments, ...matchingPaidPayments],
+          ),
+          plannedPaymentIds: matchingPlannedPayments.map((payment) => payment.id),
+          paidPaymentIds: matchingPaidPayments.map((payment) => payment.id),
+        };
+      })
+      .sort((a, b) => {
+        if (a.dueDate !== b.dueDate) {
+          return a.dueDate.localeCompare(b.dueDate);
+        }
+
+        return a.accountName.localeCompare(b.accountName);
+      });
+  }
+
+  get paymentMinimumTotal(): number {
+    return this.paymentEntryRows.reduce((sum, row) => sum + row.minimumAmount, 0);
+  }
+
+  get paymentBalanceTotal(): number {
+    return this.paymentEntryRows.reduce((sum, row) => sum + row.balance, 0);
+  }
+
+  get paymentSuggestedExtraTotal(): number {
+    return this.paymentEntryRows.reduce((sum, row) => sum + row.suggestedExtraAmount, 0);
+  }
+
+  get paymentPlannedTotal(): number {
+    return this.paymentEntryRows.reduce((sum, row) => sum + row.plannedAmount, 0);
+  }
+
+  get paymentPaidTotal(): number {
+    return this.paymentEntryRows.reduce((sum, row) => sum + row.paidAmount, 0);
+  }
+
+  get paymentRemainingTotal(): number {
+    return Math.max(this.paymentMinimumTotal - this.paymentPaidTotal, 0);
   }
 
   onPlannedPaymentsChanged(): void {
@@ -368,6 +474,179 @@ export class DashboardComponent implements OnInit {
       next: (data) => { this.debtPlanData = data; },
       error: () => { this.debtPlanData = null; },
     });
+  }
+
+  paymentAmountValue(row: PaymentEntryRow): string {
+    if (Object.prototype.hasOwnProperty.call(this.paymentDraftAmounts, row.key)) {
+      return this.paymentDraftAmounts[row.key];
+    }
+
+    const suggestedTotal = row.paidAmount > 0
+      ? row.paidAmount
+      : row.plannedAmount > 0
+      ? row.plannedAmount
+      : row.minimumAmount + row.suggestedExtraAmount;
+
+    return suggestedTotal > 0 ? this.formatAmountInput(suggestedTotal) : '';
+  }
+
+  selectedFundingAccountId(row: PaymentEntryRow): string {
+    return this.paymentDraftSources[row.key] ?? row.fundingAccountId;
+  }
+
+  onPaymentAmountInput(row: PaymentEntryRow, event: Event): void {
+    this.paymentDraftAmounts[row.key] = (event.target as HTMLInputElement).value;
+    this.paymentErrors[row.key] = null;
+    this.paymentMessages[row.key] = null;
+  }
+
+  onFundingAccountChange(row: PaymentEntryRow, event: Event): void {
+    this.paymentDraftSources[row.key] = (event.target as HTMLSelectElement).value;
+    this.paymentErrors[row.key] = null;
+    this.paymentMessages[row.key] = null;
+  }
+
+  savePaymentRow(row: PaymentEntryRow): void {
+    const amount = Number.parseFloat(this.paymentAmountValue(row));
+    if (Number.isNaN(amount) || amount <= 0) {
+      this.paymentErrors[row.key] = 'Enter a payment amount greater than 0.';
+      this.paymentMessages[row.key] = null;
+      return;
+    }
+
+    const fundingAccountId = this.selectedFundingAccountId(row);
+    const source = fundingAccountId ? this.serializeFundingSource(fundingAccountId) : undefined;
+    const operations: Array<ReturnType<typeof this.plannedPaymentsService.delete> | ReturnType<typeof this.plannedPaymentsService.create>> = [];
+
+    for (const id of row.plannedPaymentIds) {
+      operations.push(this.plannedPaymentsService.delete(id));
+    }
+    for (const id of row.paidPaymentIds) {
+      operations.push(this.plannedPaymentsService.delete(id));
+    }
+    operations.push(...this.buildPaymentCreateOperations(row, amount, source, 'PLANNED'));
+
+    this.paymentSavingStates[row.key] = true;
+    this.paymentErrors[row.key] = null;
+    this.paymentMessages[row.key] = null;
+
+    forkJoin(operations).subscribe({
+      next: () => {
+        this.paymentSavingStates[row.key] = false;
+        this.paymentMessages[row.key] = 'Payment saved.';
+        this.paymentDraftAmounts[row.key] = this.formatAmountInput(amount);
+        this.paymentDraftSources[row.key] = fundingAccountId;
+        this.loadData(true);
+      },
+      error: () => {
+        this.paymentSavingStates[row.key] = false;
+        this.paymentErrors[row.key] = 'Failed to save payment.';
+      },
+    });
+  }
+
+  markPaymentRowPaid(row: PaymentEntryRow): void {
+    const amount = Number.parseFloat(this.paymentAmountValue(row));
+    if (Number.isNaN(amount) || amount <= 0) {
+      this.paymentErrors[row.key] = 'Enter the amount you actually paid.';
+      this.paymentMessages[row.key] = null;
+      return;
+    }
+
+    const fundingAccountId = this.selectedFundingAccountId(row);
+    const source = fundingAccountId ? this.serializeFundingSource(fundingAccountId) : undefined;
+    const operations: Array<ReturnType<typeof this.plannedPaymentsService.delete> | ReturnType<typeof this.plannedPaymentsService.create>> = [];
+
+    for (const id of row.plannedPaymentIds) {
+      operations.push(this.plannedPaymentsService.delete(id));
+    }
+    for (const id of row.paidPaymentIds) {
+      operations.push(this.plannedPaymentsService.delete(id));
+    }
+    operations.push(...this.buildPaymentCreateOperations(row, amount, source, 'PAID'));
+
+    this.paymentSavingStates[row.key] = true;
+    this.paymentErrors[row.key] = null;
+    this.paymentMessages[row.key] = null;
+
+    forkJoin(operations).subscribe({
+      next: () => {
+        this.paymentSavingStates[row.key] = false;
+        this.paymentMessages[row.key] = 'Marked paid.';
+        this.paymentDraftAmounts[row.key] = this.formatAmountInput(amount);
+        this.paymentDraftSources[row.key] = fundingAccountId;
+        this.loadData(true);
+      },
+      error: () => {
+        this.paymentSavingStates[row.key] = false;
+        this.paymentErrors[row.key] = 'Failed to mark payment as paid.';
+      },
+    });
+  }
+
+  undoPaidRow(row: PaymentEntryRow): void {
+    if (row.paidPaymentIds.length === 0) {
+      return;
+    }
+
+    this.paymentSavingStates[row.key] = true;
+    this.paymentErrors[row.key] = null;
+    this.paymentMessages[row.key] = null;
+
+    forkJoin(row.paidPaymentIds.map((id) => this.plannedPaymentsService.delete(id))).subscribe({
+      next: () => {
+        this.paymentSavingStates[row.key] = false;
+        this.paymentMessages[row.key] = 'Paid status removed.';
+        this.loadData(true);
+      },
+      error: () => {
+        this.paymentSavingStates[row.key] = false;
+        this.paymentErrors[row.key] = 'Failed to remove paid status.';
+      },
+    });
+  }
+
+  clearPaymentRow(row: PaymentEntryRow): void {
+    if (row.plannedPaymentIds.length === 0) {
+      this.paymentDraftAmounts[row.key] = '';
+      this.paymentMessages[row.key] = null;
+      this.paymentErrors[row.key] = null;
+      return;
+    }
+
+    this.paymentSavingStates[row.key] = true;
+    this.paymentErrors[row.key] = null;
+    this.paymentMessages[row.key] = null;
+
+    forkJoin(row.plannedPaymentIds.map((id) => this.plannedPaymentsService.delete(id))).subscribe({
+      next: () => {
+        this.paymentSavingStates[row.key] = false;
+        this.paymentDraftAmounts[row.key] = '';
+        this.paymentMessages[row.key] = 'Payment cleared.';
+        this.loadData(true);
+      },
+      error: () => {
+        this.paymentSavingStates[row.key] = false;
+        this.paymentErrors[row.key] = 'Failed to clear payment.';
+      },
+    });
+  }
+
+  isPaymentRowSaving(row: PaymentEntryRow): boolean {
+    return this.paymentSavingStates[row.key] === true;
+  }
+
+  isPaymentRowHandled(row: PaymentEntryRow): boolean {
+    return row.paidPaymentIds.length > 0;
+  }
+
+  fundingAccountLabel(row: PaymentEntryRow): string | null {
+    const fundingAccountId = this.selectedFundingAccountId(row);
+    if (!fundingAccountId) {
+      return null;
+    }
+
+    return this.depositoryAccounts.find((account) => account.id === fundingAccountId)?.name ?? null;
   }
 
   deletePayment(id: string | undefined): void {
@@ -473,8 +752,9 @@ export class DashboardComponent implements OnInit {
     this.quickAddError = null;
   }
 
-  openDayDetail(day: number | null): void {
+  openDayDetail(day: number | null, event?: Event): void {
     if (day == null) return;
+    if (this.isInteractiveCalendarTarget(event)) return;
     this.selectedDayOfMonth = this.selectedDayOfMonth === day ? null : day;
   }
 
@@ -592,21 +872,17 @@ export class DashboardComponent implements OnInit {
 
     const accountDueBills: CalendarBill[] = this.accounts
       .filter((account) => account.type === 'credit' && account.dueDayOfMonth != null)
-      .filter((account) => {
-        const day = Math.min(Math.max(account.dueDayOfMonth ?? 1, 1), daysInMonth);
-        const dueDate = this.formatLocalDate(new Date(year, month, day));
-        return !this.plannedPayments.some(
-          (pp) =>
-            pp.status.toUpperCase() === 'PAID' &&
-            pp.internalAccountId === account.id &&
-            pp.date === dueDate,
-        );
-      })
       .map((account) => {
         const day = Math.min(Math.max(account.dueDayOfMonth ?? 1, 1), daysInMonth);
         const dueDate = this.formatLocalDate(new Date(year, month, day));
         const hasSeededMinimum = (account.minimumPayment ?? 0) > 0;
         const fallbackMinimum = Math.max(account.currentBalance * 0.03, 0);
+        const isHandled = this.plannedPayments.some(
+          (payment) =>
+            payment.status.toUpperCase() === 'PAID' &&
+            payment.internalAccountId === account.id &&
+            payment.date === dueDate,
+        );
         return {
           name: `${account.name} payment due`,
           amount: hasSeededMinimum
@@ -615,6 +891,7 @@ export class DashboardComponent implements OnInit {
           dueDate,
           kind: 'card_due' as const,
           isEstimated: !hasSeededMinimum,
+          isHandled,
           internalAccountId: account.id,
         };
       });
@@ -642,61 +919,7 @@ export class DashboardComponent implements OnInit {
         };
       }),
     );
-
-    const plannedPaymentItems: CalendarBill[] = this.plannedPayments
-      .filter((payment) => this.isPlannedStatus(payment.status))
-      .map((payment) => ({
-        name: `Planned: ${payment.accountName}`,
-        amount: Math.max(payment.amount, 0),
-        dueDate: payment.date,
-        kind: 'planned_payment' as const,
-        plannedPaymentId: payment.id,
-        strategy: payment.strategy ?? undefined,
-      }));
-
-    // Group PAID planned payments into per-account-per-day summary items
-    const paidGroups = new Map<string, { accountName: string; date: string; items: { label: string; amount: number }[]; ids: string[] }>();
-    const labelMap: Record<string, string> = { MINIMUM: 'Minimum', EXTRA: 'Extra', PAYCHECK_PLAN: 'Planned' };
-    for (const pp of this.plannedPayments) {
-      if (pp.status.toUpperCase() !== 'PAID') continue;
-      const ppDate = this.parseLocalDate(pp.date);
-      if (ppDate.getFullYear() !== year || ppDate.getMonth() !== month) continue;
-      const key = `${pp.internalAccountId}-${pp.date}`;
-      if (!paidGroups.has(key)) paidGroups.set(key, { accountName: pp.accountName, date: pp.date, items: [], ids: [] });
-      const group = paidGroups.get(key)!;
-      group.items.push({ label: labelMap[pp.type] ?? pp.type, amount: pp.amount });
-      group.ids.push(pp.id);
-    }
-    const paidSummaryItems: CalendarBill[] = Array.from(paidGroups.values()).map(({ accountName, date, items, ids }) => ({
-      name: accountName,
-      amount: items.reduce((s, i) => s + i.amount, 0),
-      dueDate: date,
-      kind: 'paid_summary' as const,
-      breakdown: items,
-      paidPaymentIds: ids,
-    }));
-
-    const currentMonthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
-    const strategyMonth = this.debtPlanData?.monthlyPlan.find((m) => m.month === currentMonthKey);
-    const strategyItems: CalendarBill[] = (strategyMonth?.payments ?? [])
-      .filter(
-        (p) =>
-          !this.plannedPayments.some(
-            (pp) =>
-              (this.isPlannedStatus(pp.status) || pp.status.toUpperCase() === 'PAID') &&
-              pp.date === p.paymentDate &&
-              pp.accountName === p.accountName,
-          ),
-      )
-      .map((p) => ({
-        name: `${p.accountName}`,
-        amount: p.amount,
-        dueDate: p.paymentDate,
-        kind: 'strategy_plan' as const,
-        strategy: this.activeStrategy,
-      }));
-
-    return [...accountDueBills, ...recurringBills, ...paydayItems, ...plannedPaymentItems, ...strategyItems, ...paidSummaryItems].sort(
+    return [...accountDueBills, ...recurringBills, ...paydayItems].sort(
       (a, b) => {
         if (a.dueDate !== b.dueDate) {
           return a.dueDate.localeCompare(b.dueDate);
@@ -723,11 +946,116 @@ export class DashboardComponent implements OnInit {
     return status.toUpperCase() === 'PLANNED';
   }
 
+  private getSuggestedExtraAmount(accountName: string, dueDate: string): number {
+    if (!this.debtPlanData) {
+      return 0;
+    }
+
+    const monthStart = this.currentMonthStart();
+    const currentMonthKey = `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, '0')}`;
+    const strategyMonth = this.debtPlanData.monthlyPlan.find((month) => month.month === currentMonthKey);
+    const strategyPayment = (strategyMonth?.payments ?? []).find(
+      (payment) => payment.accountName === accountName && payment.paymentDate === dueDate,
+    );
+
+    if (!strategyPayment) {
+      return 0;
+    }
+
+    return Number(Math.max(strategyPayment.amount - strategyPayment.minimumPayment, 0).toFixed(2));
+  }
+
+  private resolveFundingAccountId(key: string, payments: PlannedPayment[]): string {
+    if (this.paymentDraftSources[key] !== undefined) {
+      return this.paymentDraftSources[key];
+    }
+
+    for (const payment of payments) {
+      const fromSource = this.parseFundingSource(payment.source);
+      if (fromSource) {
+        return fromSource;
+      }
+    }
+
+    return this.depositoryAccounts[0]?.id ?? '';
+  }
+
+  private serializeFundingSource(accountId: string): string {
+    return `ACCOUNT:${accountId}`;
+  }
+
+  private parseFundingSource(source: string | null): string | null {
+    if (!source) {
+      return null;
+    }
+
+    if (source.startsWith('ACCOUNT:')) {
+      return source.slice('ACCOUNT:'.length);
+    }
+
+    const matchedAccount = this.depositoryAccounts.find((account) => account.name === source);
+    return matchedAccount?.id ?? null;
+  }
+
+  private isInteractiveCalendarTarget(event?: Event): boolean {
+    const target = event?.target;
+    if (!(target instanceof HTMLElement)) {
+      return false;
+    }
+
+    return Boolean(target.closest('button, input, select, option, textarea, label, a, .quick-add-form'));
+  }
+
   private formatLocalDate(date: Date): string {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+  }
+
+  private formatAmountInput(amount: number): string {
+    return Number(amount.toFixed(2)).toString();
+  }
+
+  private buildPaymentCreateOperations(
+    row: PaymentEntryRow,
+    amount: number,
+    source: string | undefined,
+    status: 'PLANNED' | 'PAID',
+  ): ReturnType<typeof this.plannedPaymentsService.create>[] {
+    const operations: ReturnType<typeof this.plannedPaymentsService.create>[] = [];
+    const minimumPortion = row.minimumAmount > 0 ? Math.min(amount, row.minimumAmount) : 0;
+    const extraPortion = Math.max(amount - minimumPortion, 0);
+
+    if (minimumPortion > 0) {
+      operations.push(
+        this.plannedPaymentsService.create({
+          accountId: row.accountId,
+          amount: Number(minimumPortion.toFixed(2)),
+          date: row.dueDate,
+          type: 'MINIMUM',
+          source,
+          status,
+        }),
+      );
+    }
+
+    const extraAmount = row.minimumAmount > 0 ? extraPortion : amount;
+    if (extraAmount > 0.009) {
+      operations.push(
+        this.plannedPaymentsService.create({
+          accountId: row.accountId,
+          amount: Number(extraAmount.toFixed(2)),
+          date: row.dueDate,
+          type: row.minimumAmount > 0 ? 'EXTRA' : 'PAYCHECK_PLAN',
+          source,
+          strategy: row.minimumAmount > 0 ? this.activeStrategy : undefined,
+          status,
+        }),
+      );
+    }
+
+    return operations;
   }
 
   billDisplayName(bill: CalendarBill): string {
@@ -773,8 +1101,7 @@ export class DashboardComponent implements OnInit {
     const MAX = 3;
     const defs: { sectionKind: CalendarSection['sectionKind']; kinds: CalendarBill['kind'][] }[] = [
       { sectionKind: 'income', kinds: ['payday'] },
-      { sectionKind: 'obligations', kinds: ['card_due', 'recurring_expense', 'paid_summary'] },
-      { sectionKind: 'recommendations', kinds: ['planned_payment', 'strategy_plan'] },
+      { sectionKind: 'obligations', kinds: ['card_due', 'recurring_expense'] },
     ];
     const sections: CalendarSection[] = [];
     let remainingVisible = MAX;

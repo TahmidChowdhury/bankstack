@@ -64,6 +64,7 @@ export class PlaidController {
       name?: string;
       currentBalance?: number;
       availableBalance?: number | null;
+      creditLimit?: number | null;
       apr?: number | null;
       minimumPayment?: number | null;
       dueDayOfMonth?: number | null;

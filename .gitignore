@@ -30,3 +30,6 @@ backend/prisma/seed-data.json
 
 # Local onboarding notes
 CODEBASE_QUICKSTART.md
+
+# Local notes vault (Obsidian-friendly, not committed)
+notes/

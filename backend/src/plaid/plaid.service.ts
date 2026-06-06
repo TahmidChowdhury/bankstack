@@ -102,6 +102,7 @@ export class PlaidService {
           update: {
             currentBalance: account.balances.current ?? 0,
             availableBalance: account.balances.available ?? null,
+            creditLimit: account.balances.limit ?? null,
             plaidItemId: plaidItem.id,
           },
           create: {
@@ -112,6 +113,7 @@ export class PlaidService {
             institution: institutionName,
             currentBalance: account.balances.current ?? 0,
             availableBalance: account.balances.available ?? null,
+            creditLimit: account.balances.limit ?? null,
             plaidItemId: plaidItem.id,
           },
         });
@@ -248,6 +250,7 @@ export class PlaidService {
           data: {
             currentBalance: account.balances.current ?? 0,
             availableBalance: account.balances.available ?? null,
+            creditLimit: account.balances.limit ?? null,
           },
         });
         accountsUpdated += updated.count;
@@ -417,6 +420,7 @@ export class PlaidService {
       name?: string;
       currentBalance?: number;
       availableBalance?: number | null;
+      creditLimit?: number | null;
       apr?: number | null;
       minimumPayment?: number | null;
       dueDayOfMonth?: number | null;

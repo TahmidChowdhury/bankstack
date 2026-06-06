@@ -117,6 +117,12 @@
   justify-content: space-between;
   align-items: center;
 
+  &.balance-insight {
+    padding-top: 6px;
+    margin-top: 2px;
+    border-top: 1px dashed #e4e7ec;
+  }
+
   .label {
     font-size: 0.875rem;
     color: #6c757d;
@@ -132,6 +138,20 @@
 
     &.apr {
       color: #fd7e14;
+    }
+
+    &.utilization {
+      &.low {
+        color: #0f9d58;
+      }
+
+      &.medium {
+        color: #b54708;
+      }
+
+      &.high {
+        color: #b42318;
+      }
     }
   }
 }
@@ -230,6 +250,23 @@
       border-color: #1570ef;
       background: #fff;
     }
+  }
+}
+
+.read-only-field {
+  .read-only-value {
+    padding: 7px 10px;
+    border: 1px solid #d0d5dd;
+    border-radius: 7px;
+    font-size: 0.9rem;
+    color: #0f1728;
+    background: #f2f4f7;
+    font-weight: 600;
+  }
+
+  small {
+    font-size: 0.74rem;
+    color: #667085;
   }
 }
 

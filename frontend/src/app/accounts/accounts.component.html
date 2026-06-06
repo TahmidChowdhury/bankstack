@@ -37,6 +37,10 @@
                 <span class="label">Available Balance</span>
                 <span class="value">{{ account.availableBalance | currency }}</span>
               </div>
+              <div *ngIf="getBalanceInsight(account) as insight" class="balance-row balance-insight">
+                <span class="label">{{ insight.label }}</span>
+                <span class="value">{{ insight.amount | currency }}</span>
+              </div>
             </div>
             <div class="subtype" *ngIf="account.subtype">{{ account.subtype }}</div>
           </ng-container>
@@ -89,6 +93,18 @@
                 <span class="label">Available Credit</span>
                 <span class="value">{{ account.availableBalance | currency }}</span>
               </div>
+              <ng-container *ngIf="getCreditSummary(account) as creditSummary">
+                <div class="balance-row balance-insight">
+                  <span class="label">Credit Limit</span>
+                  <span class="value">{{ creditSummary.limit | currency }}</span>
+                </div>
+                <div class="balance-row">
+                  <span class="label">Utilization</span>
+                  <span class="value utilization" [ngClass]="getUtilizationClass(creditSummary.utilization)">
+                    {{ creditSummary.utilization | number:'1.0-1' }}%
+                  </span>
+                </div>
+              </ng-container>
               <div *ngIf="account.apr" class="balance-row">
                 <span class="label">APR</span>
                 <span class="value apr">{{ account.apr }}%</span>
@@ -115,9 +131,14 @@
                 <input type="number" step="0.01" [(ngModel)]="editForm.currentBalance" />
               </label>
               <label class="edit-field">
-                <span>Available Credit ($)</span>
-                <input type="number" step="0.01" [(ngModel)]="editForm.availableBalance" />
+                <span>Credit Limit ($)</span>
+                <input type="number" step="0.01" min="0" [(ngModel)]="editForm.creditLimit" />
               </label>
+              <div class="edit-field read-only-field">
+                <span>Available Credit ($)</span>
+                <div class="read-only-value">{{ getDerivedAvailableCredit() | currency }}</div>
+                <small>Auto-calculated from Credit Limit - Current Balance</small>
+              </div>
               <label class="edit-field">
                 <span>APR (%)</span>
                 <input type="number" step="0.01" min="0" max="100" [(ngModel)]="editForm.apr" />

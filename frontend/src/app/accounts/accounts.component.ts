@@ -7,6 +7,7 @@ type EditForm = {
   name: string;
   currentBalance: number;
   availableBalance: number | null;
+  creditLimit: number | null;
   apr: number | null;
   minimumPayment: number | null;
   dueDayOfMonth: number | null;
@@ -25,7 +26,7 @@ export class AccountsComponent implements OnInit {
   error: string | null = null;
 
   editingId: string | null = null;
-  editForm: EditForm = { name: '', currentBalance: 0, availableBalance: null, apr: null, minimumPayment: null, dueDayOfMonth: null };
+  editForm: EditForm = { name: '', currentBalance: 0, availableBalance: null, creditLimit: null, apr: null, minimumPayment: null, dueDayOfMonth: null };
   saving = false;
   saveError: string | null = null;
 
@@ -56,6 +57,7 @@ export class AccountsComponent implements OnInit {
       name: account.name,
       currentBalance: account.currentBalance,
       availableBalance: account.availableBalance,
+      creditLimit: account.creditLimit,
       apr: account.apr,
       minimumPayment: account.minimumPayment,
       dueDayOfMonth: account.dueDayOfMonth,
@@ -71,10 +73,16 @@ export class AccountsComponent implements OnInit {
   saveEdit(account: Account): void {
     this.saving = true;
     this.saveError = null;
+    const calculatedAvailableForCredit =
+      account.type === 'credit' && this.editForm.creditLimit !== null
+        ? Number((this.editForm.creditLimit - this.editForm.currentBalance).toFixed(2))
+        : this.editForm.availableBalance;
+
     const payload: Parameters<ApiService['updateAccount']>[1] = {
       name: this.editForm.name || undefined,
       currentBalance: this.editForm.currentBalance,
-      availableBalance: this.editForm.availableBalance,
+      availableBalance: calculatedAvailableForCredit,
+      creditLimit: this.editForm.creditLimit,
       apr: this.editForm.apr,
       minimumPayment: this.editForm.minimumPayment,
       dueDayOfMonth: this.editForm.dueDayOfMonth,
@@ -113,5 +121,44 @@ export class AccountsComponent implements OnInit {
       loan: 'Loan',
     };
     return labels[type] || type;
+  }
+
+  getBalanceInsight(account: Account): { label: string; amount: number } | null {
+    if (account.availableBalance === null) return null;
+
+    const delta = Number((account.currentBalance - account.availableBalance).toFixed(2));
+    if (Math.abs(delta) < 0.01) return null;
+
+    return {
+      label: delta > 0 ? 'Pending / Holds' : 'Pending Credits',
+      amount: Math.abs(delta),
+    };
+  }
+
+  getCreditSummary(account: Account): { limit: number; utilization: number } | null {
+    if (account.type !== 'credit') return null;
+
+    const rawLimit = account.creditLimit ?? (account.availableBalance !== null ? account.currentBalance + account.availableBalance : null);
+    if (rawLimit === null) return null;
+
+    const limit = Number(rawLimit.toFixed(2));
+    if (limit <= 0) return null;
+
+    const utilization = Number(((account.currentBalance / limit) * 100).toFixed(1));
+    return {
+      limit,
+      utilization: Math.max(0, Math.min(100, utilization)),
+    };
+  }
+
+  getUtilizationClass(utilization: number): 'low' | 'medium' | 'high' {
+    if (utilization >= 70) return 'high';
+    if (utilization >= 30) return 'medium';
+    return 'low';
+  }
+
+  getDerivedAvailableCredit(): number | null {
+    if (this.editForm.creditLimit === null) return this.editForm.availableBalance;
+    return Number((this.editForm.creditLimit - this.editForm.currentBalance).toFixed(2));
   }
 }

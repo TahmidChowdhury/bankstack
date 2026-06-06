@@ -248,8 +248,7 @@
   border-radius: 10px;
   background: #f8fafc;
   border: 1px solid #e6edf5;
-  cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
 
   &.empty {
     background: transparent;
@@ -266,11 +265,6 @@
     box-shadow: inset 0 0 0 2px #1570ef;
   }
 
-  &.selected {
-    border-color: #1570ef;
-    box-shadow: 0 0 0 2px rgba(21, 112, 239, 0.14);
-  }
-
   .day-number {
     margin: 0 0 6px;
     text-align: right;
@@ -278,17 +272,6 @@
     font-weight: 700;
     color: #0f1728;
   }
-}
-
-.calendar-cell:not(.empty):hover {
-  transform: translateY(-1px);
-  border-color: #98a2b3;
-}
-
-.calendar-cell:not(.empty):focus-visible {
-  outline: none;
-  border-color: #1570ef;
-  box-shadow: 0 0 0 3px rgba(21, 112, 239, 0.18);
 }
 
 .cell-header {
@@ -300,29 +283,6 @@
   .day-number {
     margin: 0;
   }
-}
-
-.quick-add-btn {
-  opacity: 0;
-  padding: 0 5px;
-  border-radius: 4px;
-  border: 1px solid #d0d5dd;
-  background: #fff;
-  color: #344054;
-  font-size: 0.85rem;
-  cursor: pointer;
-  line-height: 1.4;
-  transition: opacity 0.15s;
-
-  &:hover {
-    background: #eff4ff;
-    border-color: #a4bcfd;
-    color: #1570ef;
-  }
-}
-
-.calendar-cell:hover .quick-add-btn {
-  opacity: 1;
 }
 
 .cal-sections {
@@ -378,6 +338,22 @@
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     font-feature-settings: 'tnum' 1;
+  }
+
+  .item-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 6px;
+    border-radius: 999px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+
+    &.handled {
+      background: #dcfce7;
+      color: #15803d;
+    }
   }
 
   .bill-action-group {
@@ -540,62 +516,7 @@
   }
 }
 
-.quick-add-form {
-  margin-top: 6px;
-  padding: 8px;
-  background: #f8fafc;
-  border: 1px solid #d0d5dd;
-  border-radius: 8px;
-  display: grid;
-  gap: 6px;
-
-  select,
-  input {
-    width: 100%;
-    padding: 5px 8px;
-    border: 1px solid #d0d5dd;
-    border-radius: 6px;
-    font-size: 0.78rem;
-    background: #fff;
-    box-sizing: border-box;
-  }
-
-  .quick-add-actions {
-    display: flex;
-    gap: 6px;
-
-    .btn-save {
-      flex: 1;
-      padding: 4px;
-      border: none;
-      border-radius: 6px;
-      background: #1570ef;
-      color: #fff;
-      font-size: 0.78rem;
-      font-weight: 600;
-      cursor: pointer;
-
-      &:disabled { opacity: 0.6; cursor: not-allowed; }
-    }
-
-    .btn-cancel {
-      padding: 4px 8px;
-      border: 1px solid #d0d5dd;
-      border-radius: 6px;
-      background: #fff;
-      font-size: 0.78rem;
-      cursor: pointer;
-    }
-  }
-
-  .quick-add-error {
-    margin: 0;
-    font-size: 0.72rem;
-    color: #b42318;
-  }
-}
-
-.calendar-detail-panel {
+.payment-entry-panel {
   margin-top: 16px;
   padding: 18px;
   border-radius: 14px;
@@ -604,95 +525,130 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
-.calendar-detail-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 16px;
-
-  h4 {
-    margin: 0;
-    font-size: 1.05rem;
-    color: #101828;
-  }
-
-  p {
-    margin: 4px 0 0;
-    color: #667085;
-    font-size: 0.9rem;
-  }
-}
-
-.detail-close-btn {
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid #d0d5dd;
-  background: #fff;
-  color: #344054;
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-
-  &:hover {
-    background: #f9fafb;
-  }
-}
-
-.calendar-detail-sections {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.calendar-detail-section {
-  display: grid;
-  gap: 10px;
-  padding: 14px;
-  border-radius: 12px;
-  background: #ffffff;
-  border: 1px solid #dbe7f3;
-}
-
-.detail-section-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-
-  h5 {
-    margin: 0;
-    font-size: 0.82rem;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: #475467;
-  }
-
-  span {
-    min-width: 24px;
-    padding: 2px 8px;
-    border-radius: 999px;
-    background: #eff4ff;
-    color: #175cd3;
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-align: center;
-  }
-}
-
-.detail-due-list {
-  gap: 8px;
-
-  li {
-    font-size: 0.82rem;
-    gap: 6px 10px;
-    padding: 8px 10px;
-  }
-}
-
 .calendar-detail-empty {
   margin: 0;
   color: #667085;
+}
+
+.payment-summary {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.payment-summary-card {
+  padding: 12px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #dbe7f3;
+  display: grid;
+  gap: 6px;
+
+  .label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #667085;
+  }
+
+  strong {
+    font-size: 1rem;
+    color: #101828;
+  }
+}
+
+.payment-table-wrap {
+  margin-top: 14px;
+  overflow-x: auto;
+}
+
+.payment-table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: 12px 10px;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid #dbe7f3;
+  }
+
+  th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #667085;
+  }
+
+  td {
+    font-size: 0.9rem;
+    color: #101828;
+  }
+
+  .numeric-cell {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+}
+
+.payment-row-title {
+  display: grid;
+  gap: 4px;
+
+  strong {
+    font-size: 0.92rem;
+  }
+
+  span {
+    font-size: 0.78rem;
+    color: #667085;
+  }
+
+  .handled-status {
+    color: #027a48;
+    font-weight: 700;
+  }
+}
+
+.payment-select,
+.payment-input {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  background: #fff;
+  color: #101828;
+  font-size: 0.88rem;
+  box-sizing: border-box;
+}
+
+.payment-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+
+  .btn {
+    min-height: 38px;
+    padding: 8px 14px;
+  }
+}
+
+.payment-feedback {
+  margin: 8px 0 0;
+  font-size: 0.78rem;
+
+  &.error {
+    color: #b42318;
+  }
+
+  &.success {
+    color: #027a48;
+  }
 }
 
 .btn {
@@ -708,6 +664,7 @@
   &.btn-primary {
     background: #1570ef;
     color: #fff;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.08);
 
     &:hover {
       background: #175cd3;
@@ -715,12 +672,37 @@
   }
 
   &.btn-secondary {
-    background: #fff;
-    color: #344054;
+    background: #f8fafc;
+    color: #475467;
     border: 1px solid #d0d5dd;
 
     &:hover {
-      background: #f9fafb;
+      background: #eef2f6;
+    }
+  }
+
+  &.btn-paid {
+    background: #12b76a;
+    color: #fff;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.08);
+
+    &:hover {
+      background: #039855;
+    }
+  }
+
+  &.btn-tertiary {
+    padding: 0;
+    min-height: auto;
+    background: transparent;
+    color: #667085;
+    border: none;
+    font-size: 0.82rem;
+    font-weight: 600;
+
+    &:hover {
+      color: #344054;
+      text-decoration: underline;
     }
   }
 
@@ -741,16 +723,20 @@
     align-items: flex-start;
   }
 
-  .calendar-detail-sections {
-    grid-template-columns: 1fr;
-  }
-
   .calendar-cell {
     min-height: 104px;
   }
 
   .calendar-legend {
     margin-bottom: 8px;
+  }
+
+  .payment-actions {
+    gap: 6px;
+  }
+
+  .payment-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -780,11 +766,15 @@
     min-height: auto;
   }
 
-  .calendar-detail-header {
-    flex-direction: column;
-  }
-
   .calendar-legend {
     gap: 8px;
+  }
+
+  .payment-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-table {
+    min-width: 720px;
   }
 }

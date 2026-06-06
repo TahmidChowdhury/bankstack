@@ -11,6 +11,7 @@ export interface Account {
   institution: string;
   currentBalance: number;
   availableBalance: number | null;
+  creditLimit: number | null;
   minimumPayment: number | null;
   dueDayOfMonth: number | null;
   apr: number | null;
@@ -354,6 +355,7 @@ export class ApiService {
       name?: string;
       currentBalance?: number;
       availableBalance?: number | null;
+      creditLimit?: number | null;
       apr?: number | null;
       minimumPayment?: number | null;
       dueDayOfMonth?: number | null;
