@@ -5,6 +5,7 @@ import {
   Account,
   ApiService,
   CashflowForecast,
+  BalanceSnapshot,
   DebtPlanResponse,
   FinancialPlan,
   IncomeSummary,
@@ -164,6 +165,7 @@ export class DashboardComponent implements OnInit {
   };
   accounts: Account[] = [];
   transactions: Transaction[] = [];
+  snapshots: BalanceSnapshot[] = [];
   recurringExpenses: RecurringExpenseDay[] = [];
   plannedPayments: PlannedPayment[] = [];
   loading = true;
@@ -210,6 +212,7 @@ export class DashboardComponent implements OnInit {
     forkJoin({
       accounts: this.api.getAccounts(),
       transactions: this.api.getTransactions(),
+      snapshots: this.api.getBalanceSnapshots(),
       income: this.api.getIncome(),
       financialPlan: this.api.getFinancialPlan(),
       cashflowForecast: this.api.getCashflowForecast(this.activeStrategy),
@@ -221,6 +224,7 @@ export class DashboardComponent implements OnInit {
       next: ({
         accounts,
         transactions,
+        snapshots,
         income,
         financialPlan,
         cashflowForecast,
@@ -231,6 +235,7 @@ export class DashboardComponent implements OnInit {
       }) => {
         this.accounts = accounts;
         this.transactions = transactions.slice(0, 10);
+        this.snapshots = snapshots;
         this.income = income;
         this.financialPlan = financialPlan;
         this.cashflowForecast = cashflowForecast;
@@ -291,6 +296,27 @@ export class DashboardComponent implements OnInit {
 
   get hasLinkedItems(): boolean {
     return this.plaidItems.length > 0;
+  }
+
+  get recentSnapshotWindow(): BalanceSnapshot[] {
+    return this.snapshots.slice(-14);
+  }
+
+  get latestSnapshot(): BalanceSnapshot | null {
+    return this.snapshots.length ? this.snapshots[this.snapshots.length - 1] : null;
+  }
+
+  get debtChangeSinceFirstSnapshot(): number | null {
+    if (this.snapshots.length < 2) return null;
+    const firstDebt = this.snapshots[0].totalDebt;
+    const latestDebt = this.snapshots[this.snapshots.length - 1].totalDebt;
+    return Number((latestDebt - firstDebt).toFixed(2));
+  }
+
+  get debtChangeDirection(): 'down' | 'up' | 'flat' {
+    const delta = this.debtChangeSinceFirstSnapshot;
+    if (delta === null || Math.abs(delta) < 0.01) return 'flat';
+    return delta < 0 ? 'down' : 'up';
   }
 
   get monthlyDueTotal(): number {
@@ -488,6 +514,10 @@ export class DashboardComponent implements OnInit {
       : row.minimumAmount + row.suggestedExtraAmount;
 
     return suggestedTotal > 0 ? this.formatAmountInput(suggestedTotal) : '';
+  }
+
+  trackByPaymentRow(_index: number, row: PaymentEntryRow): string {
+    return row.key;
   }
 
   selectedFundingAccountId(row: PaymentEntryRow): string {

@@ -21,9 +21,17 @@ Use it as the first stop before exploring the full codebase.
 
 - `/dashboard`: operational decision surface
 - `/accounts`: account metadata quality control
-- `/transactions`: activity history
+
+## Secondary Surfaces
+
+- `/transactions`: activity history (manual review only)
 - `/debt-plan`: longer-range payoff simulation
 - `/payoff-calculator`: strategy sandbox
+
+## Recurring Monthly Obligations
+
+- Monthly recurring obligations are backend-first (`RecurringExpense` and cashflow computations), not dependent on frequent `/transactions` page use.
+- The UI can de-emphasize manual transaction browsing while still preserving planning quality through recurring-expense data.
 
 ## Current Account Balance Rules
 
@@ -74,6 +82,14 @@ If compile errors mention unknown Prisma fields, run:
 - Avoid introducing abstraction unless duplication appears repeatedly.
 - Prioritize clarity in labels over adding controls.
 - Add tests only around business rules that can regress.
+
+## Simplification Initiative
+
+See `docs/SIMPLIFICATION_INITIATIVE.md` for the current declutter plan that prioritizes:
+
+- Accounts updates
+- Dashboard calendar workflow
+- Secondary treatment of advanced strategy tools
 
 ## Near-Term Risk Areas
 

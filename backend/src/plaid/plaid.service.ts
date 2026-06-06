@@ -11,6 +11,7 @@ import {
   CustomSandboxTransaction,
 } from 'plaid';
 import { encrypt, decrypt } from './token-crypto';
+import { SnapshotService } from '../snapshot/snapshot.service';
 
 type SyncResult = {
   itemsProcessed: number;
@@ -29,6 +30,7 @@ export class PlaidService {
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
+    private readonly snapshotService: SnapshotService,
   ) {
     const env = this.configService.get<string>('PLAID_ENV', 'sandbox');
     const configuration = new Configuration({
@@ -430,7 +432,9 @@ export class PlaidService {
     if (!existing) {
       throw new NotFoundException(`Account "${id}" was not found.`);
     }
-    return this.prisma.account.update({ where: { id }, data });
+    const updated = await this.prisma.account.update({ where: { id }, data });
+    await this.snapshotService.takeSnapshotNow('account-update');
+    return updated;
   }
 
   async getTransactions(accountId?: string) {

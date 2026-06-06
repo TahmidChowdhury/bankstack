@@ -10,7 +10,15 @@ export class SnapshotService {
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async takeDailySnapshot(): Promise<void> {
-    this.logger.log('Taking daily balance snapshot...');
+    await this.captureSnapshot('daily-cron');
+  }
+
+  async takeSnapshotNow(source = 'manual'): Promise<void> {
+    await this.captureSnapshot(source);
+  }
+
+  private async captureSnapshot(source: string): Promise<void> {
+    this.logger.log(`Taking balance snapshot (${source})...`);
 
     const accounts = await this.prisma.account.findMany();
 
@@ -33,7 +41,9 @@ export class SnapshotService {
       data: { totalCash, totalDebt, netWorth },
     });
 
-    this.logger.log(`Snapshot taken: cash=${totalCash}, debt=${totalDebt}, netWorth=${netWorth}`);
+    this.logger.log(
+      `Snapshot taken (${source}): cash=${totalCash}, debt=${totalDebt}, netWorth=${netWorth}`,
+    );
   }
 
   async getSnapshots() {

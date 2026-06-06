@@ -32,6 +32,38 @@
       <app-financial-plan [plan]="financialPlan" />
     </section>
 
+    <section class="full-width-section progress-section" *ngIf="latestSnapshot as snapshot">
+      <div class="progress-card">
+        <div>
+          <p class="section-eyebrow">Debt Progress</p>
+          <h3>{{ snapshot.totalDebt | currency }} total debt</h3>
+          <p>
+            Last snapshot: {{ snapshot.createdAt | date: 'MMM d, y, h:mm a' }}
+          </p>
+        </div>
+
+        <div class="progress-metrics">
+          <article>
+            <span class="label">Since first snapshot</span>
+            <strong [class.down]="debtChangeDirection === 'down'" [class.up]="debtChangeDirection === 'up'">
+              <ng-container *ngIf="debtChangeSinceFirstSnapshot !== null; else noProgressData">
+                {{ debtChangeSinceFirstSnapshot | currency }}
+              </ng-container>
+              <ng-template #noProgressData>Not enough history</ng-template>
+            </strong>
+          </article>
+          <article>
+            <span class="label">Snapshots recorded</span>
+            <strong>{{ snapshots.length }}</strong>
+          </article>
+          <article>
+            <span class="label">Recent window</span>
+            <strong>{{ recentSnapshotWindow.length }} entries</strong>
+          </article>
+        </div>
+      </div>
+    </section>
+
     <section class="dashboard-tabs">
       <button
         type="button"
@@ -86,6 +118,29 @@
           [accounts]="accounts"
           (plannedPaymentsChanged)="onPlannedPaymentsChanged()"
         />
+      </section>
+
+      <section class="full-width-section support-section advanced-tools-section">
+        <div class="section-intro">
+          <p class="section-eyebrow">Advanced Tools</p>
+          <h3>Optional Strategy Simulators</h3>
+          <p>Use these occasionally for deeper analysis. They are intentionally outside the primary weekly workflow.</p>
+        </div>
+
+        <div class="advanced-tools-grid">
+          <a class="advanced-tool-card" href="/transactions">
+            <h4>Transactions</h4>
+            <p>Manual transaction history review when you need detail checks.</p>
+          </a>
+          <a class="advanced-tool-card" href="/payoff-calculator">
+            <h4>Payoff Calculator</h4>
+            <p>Quick monthly-payment what-if simulation.</p>
+          </a>
+          <a class="advanced-tool-card" href="/debt-plan">
+            <h4>Debt Plan</h4>
+            <p>12-month strategy plan with apply-to-calendar actions.</p>
+          </a>
+        </div>
       </section>
     </ng-container>
 
@@ -213,7 +268,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let row of paymentEntryRows">
+              <tr *ngFor="let row of paymentEntryRows; trackBy: trackByPaymentRow">
                 <td>
                   <div class="payment-row-title">
                     <strong>{{ row.accountName }}</strong>

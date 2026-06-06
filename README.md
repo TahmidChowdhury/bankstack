@@ -67,6 +67,7 @@ npm run start --prefix frontend
 
 For concise system notes, see `APP_ARCHITECTURE.md`.
 For local, personal notes (Obsidian-friendly), use `notes/`.
+For the active product declutter roadmap, see `docs/SIMPLIFICATION_INITIATIVE.md`.
 
 ### 1. Clone and Install Dependencies
 

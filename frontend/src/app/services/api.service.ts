@@ -56,6 +56,14 @@ export interface DebtSummary {
   netWorth: number;
 }
 
+export interface BalanceSnapshot {
+  id: string;
+  totalCash: number;
+  totalDebt: number;
+  netWorth: number;
+  createdAt: string;
+}
+
 export interface AvalancheItem {
   accountId: string;
   name: string;
@@ -277,6 +285,10 @@ export class ApiService {
 
   getDebtSummary(): Observable<DebtSummary> {
     return this.http.get<DebtSummary>(`${this.baseUrl}/debt/summary`);
+  }
+
+  getBalanceSnapshots(): Observable<BalanceSnapshot[]> {
+    return this.http.get<BalanceSnapshot[]>(`${this.baseUrl}/snapshots`);
   }
 
   getIncomeSummary(): Observable<IncomeSummary> {
