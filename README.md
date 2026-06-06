@@ -1,318 +1,115 @@
-# BankStack 🏦
+# BankStack
 
-A full-stack personal finance dashboard that aggregates credit card balances, bank accounts, and transactions to help track debt and calculate optimal payoff strategies.
+BankStack is a personal finance workspace centered on a practical weekly loop:
 
-## Tech Stack
+1. Update account balances and payment metadata in Accounts.
+2. Work from the Dashboard calendar to execute required payments.
+3. Use advanced tools only when needed.
 
-| Layer | Technology |
-|-------|------------|
-| Backend | NestJS (Node.js + TypeScript) |
-| Frontend | Angular 19 |
-| Database | PostgreSQL |
-| ORM | Prisma |
-| Bank Integration | Plaid API (sandbox + development) |
+## Current UX Direction
 
-## Repository Structure
+Primary surfaces:
 
-```
-bankstack/
-├── backend/          # NestJS API server
-│   ├── src/
-│   │   ├── plaid/    # Plaid integration module
-│   │   ├── debt/     # Debt engine + payoff calculator
-│   │   ├── snapshot/ # Daily balance snapshot scheduler
-│   │   └── prisma/   # Prisma service (database client)
-│   ├── prisma/
-│   │   └── schema.prisma
-│   └── prisma.config.ts
-├── frontend/         # Angular app
-│   └── src/app/
-│       ├── dashboard/          # Dashboard page
-│       ├── accounts/           # Accounts page
-│       ├── transactions/       # Transactions page
-│       ├── payoff-calculator/  # Debt payoff calculator
-│       ├── nav/                # Sidebar navigation
-│       └── services/           # ApiService
-└── prisma/
-    └── schema.prisma   # Root-level Prisma schema reference
+- Dashboard
+- Accounts
+
+Secondary surfaces (reachable from Dashboard "Advanced Tools"):
+
+- Transactions
+- Payoff Calculator
+- Debt Plan
+
+## Stack
+
+- Backend: NestJS + Prisma + PostgreSQL
+- Frontend: Angular
+- Bank connectivity: Plaid (optional, sandbox/development)
+
+## Quick Start
+
+### 1. Install dependencies
+
+```bash
+cd backend && npm install
+cd ../frontend && npm install
+cd ..
 ```
 
-## Prerequisites
+### 2. Configure environment
 
-- Node.js 18+
-- PostgreSQL 14+
-- A [Plaid](https://dashboard.plaid.com) account (free sandbox available)
+Create a root `.env` and set at least:
 
-## Setup Instructions
+```env
+DATABASE_URL=postgresql://postgres:password@localhost:5432/bankstack
+PLAID_CLIENT_ID=...
+PLAID_SECRET=...
+PLAID_ENV=sandbox
+```
 
-## Daily Development (Recommended)
+### 3. Run migrations
 
-Use the root command below as the single default workflow:
+```bash
+cd backend
+npx prisma migrate deploy
+npx prisma generate
+```
+
+### 4. Start the app
 
 ```bash
 npm run dev
 ```
 
-This runs both services through `scripts/start.js`:
-
-- backend: NestJS watch mode on http://localhost:3000
-- frontend: Angular serve on http://localhost:4200
-
-If you only need one service:
-
-```bash
-npm run dev --prefix backend
-npm run start --prefix frontend
-```
-
-For concise system notes, see `APP_ARCHITECTURE.md`.
-For local, personal notes (Obsidian-friendly), use `notes/`.
-For the active product declutter roadmap, see `docs/SIMPLIFICATION_INITIATIVE.md`.
-
-### 1. Clone and Install Dependencies
-
-```bash
-git clone https://github.com/TahmidChowdhury/bankstack.git
-cd bankstack
-
-# Install backend dependencies
-cd backend && npm install
-
-# Install frontend dependencies
-cd ../frontend && npm install
-
-# Return to the root when you want to start both apps together
-cd ..
-```
-
-### 2. Configure Environment Variables
-
-```bash
-# From the project root
-cp .env.example .env
-# Or from the backend directory
-cp backend/.env.example backend/.env
-```
-
-Edit the `.env` file and fill in:
-
-```env
-PLAID_CLIENT_ID=your_plaid_client_id
-PLAID_SECRET=your_plaid_secret
-PLAID_ENV=sandbox
-DATABASE_URL=postgresql://postgres:password@localhost:5432/bankstack
-```
-
-Get your Plaid credentials at [https://dashboard.plaid.com](https://dashboard.plaid.com).
-
-### 3. Set Up the Database
-
-Make sure PostgreSQL is running, then create the database and run migrations:
-
-```bash
-cd backend
-npx prisma migrate dev --name init
-# Or to just push the schema (no migration history):
-npx prisma db push
-```
-
-### 4. Start Both Apps
-
-```bash
-npm run start
-```
-
 This starts:
 
-- the NestJS backend on **http://localhost:3000**
-- the Angular frontend on **http://localhost:4200**
+- Backend: http://localhost:3000
+- Frontend: http://localhost:4200
 
-### 5. Start Each App Individually
+Use HTTP for local frontend access (not HTTPS).
+
+## Common Commands
+
+Root:
+
+```bash
+npm run dev
+npm run start
+npm run start:backend
+npm run start:frontend
+```
+
+Backend:
 
 ```bash
 cd backend
-npm run start:dev
+npm run dev
+npm run build
+npm run test
+npx prisma generate
 ```
 
-The NestJS server starts on **http://localhost:3000**.
+Frontend:
 
 ```bash
 cd frontend
-npm start
+npm run start
+npm run build
+npm run test
 ```
 
-The Angular app starts on **http://localhost:4200**.
+## Canonical Docs
 
----
+Use these as source of truth:
 
-## API Endpoints
+- Architecture and operational map: APP_ARCHITECTURE.md
+- Product simplification roadmap: docs/SIMPLIFICATION_INITIATIVE.md
 
-### Plaid Integration
+Local-only notes (gitignored):
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/plaid/link-token` | Generate a Plaid Link token |
-| `POST` | `/plaid/exchange-token` | Exchange public token for access token |
-| `GET` | `/accounts` | List all connected accounts |
-| `GET` | `/transactions?accountId=` | List transactions (optional account filter) |
-| `POST` | `/refresh-balances` | Refresh balances from Plaid |
+- notes/
 
-### Debt Engine
+## Notes
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/debt/summary` | Get total debt, cash, and net worth |
-| `POST` | `/debt/payoff-strategy` | Calculate avalanche payoff strategy |
-
-#### Example: Payoff Strategy Request
-
-```json
-POST /debt/payoff-strategy
-{
-  "monthlyPayment": 500
-}
-```
-
-#### Example: Payoff Strategy Response
-
-```json
-{
-  "totalDebt": 8500.00,
-  "totalCash": 3200.00,
-  "netWorth": -5300.00,
-  "highestAprDebt": {
-    "name": "Chase Freedom",
-    "balance": 3200.00,
-    "apr": 24.99
-  },
-  "avalancheOrder": [],
-  "payoffDate": "2026-09-01T00:00:00.000Z",
-  "totalInterestSaved": 1240.50,
-  "monthlyPayment": 500
-}
-```
-
----
-
-## Database Schema
-
-```prisma
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  createdAt DateTime @default(now())
-}
-
-model Account {
-  id               String   @id @default(cuid())
-  plaidAccountId   String   @unique
-  name             String
-  type             String
-  subtype          String?
-  institution      String
-  currentBalance   Float
-  availableBalance Float?
-  apr              Float?
-  transactions     Transaction[]
-}
-
-model Transaction {
-  id           String   @id @default(cuid())
-  accountId    String
-  amount       Float
-  date         DateTime
-  merchantName String?
-  category     String?
-  description  String?
-}
-
-model BalanceSnapshot {
-  id        String   @id @default(cuid())
-  totalCash Float
-  totalDebt Float
-  netWorth  Float
-  createdAt DateTime @default(now())
-}
-```
-
----
-
-## Frontend Pages
-
-| Route | Page | Features |
-|-------|------|---------|
-| `/dashboard` | Dashboard | Net worth summary cards, account balances overview |
-| `/accounts` | Accounts | Connected accounts grouped by type, APR display |
-| `/transactions` | Transactions | Transaction history with account filter |
-| `/payoff-calculator` | Payoff Calculator | Avalanche strategy calculator, payoff timeline |
-
----
-
-## Features
-
-### Plaid Integration
-- Securely connect bank accounts and credit cards via Plaid Link
-- Fetch real-time balances and transaction history
-- Supports sandbox mode for development/testing
-
-### Debt Engine
-- Calculates total credit card debt, available cash, and net worth
-- Identifies the highest APR debt to target first
-- Implements the **avalanche payoff strategy** (highest-APR-first)
-- Estimates payoff date and total interest saved
-
-### Daily Snapshots
-- A scheduled cron job runs every night at midnight
-- Records daily snapshots of total cash, debt, and net worth
-- Enables historical charting of financial progress
-
----
-
-## Security
-
-- Plaid credentials are stored as environment variables only
-- Bank login credentials are **never** stored — Plaid handles authentication
-- Only Plaid access tokens are stored (passed per-request; extend to DB if needed)
-- CORS is restricted to `http://localhost:4200` by default
-
----
-
-## Development
-
-### Root Commands
-
-```bash
-npm run start         # Start backend + frontend together
-npm run start:backend # Start only the backend from the repo root
-npm run start:frontend # Start only the frontend from the repo root
-```
-
-### Backend Commands
-
-```bash
-cd backend
-npm run start:dev    # Start with hot reload
-npm run build        # Production build
-npm run test         # Run unit tests
-npx prisma studio    # Open Prisma database GUI
-```
-
-### Frontend Commands
-
-```bash
-cd frontend
-npm start            # Start dev server (port 4200)
-npm run build        # Production build
-npm test             # Run unit tests
-```
-
----
-
-## Environment Variables Reference
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `PLAID_CLIENT_ID` | Plaid API client ID | `abc123...` |
-| `PLAID_SECRET` | Plaid API secret key | `xyz789...` |
-| `PLAID_ENV` | Plaid environment | `sandbox` |
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql://...` |
+- Snapshot-based debt progress is available from backend snapshots.
+- Manual account updates can still drive progress tracking via snapshot capture.
+- Recurring monthly obligations remain backend-first through recurring-expense and cashflow logic.
