@@ -44,10 +44,10 @@ Primary nav:
 
 - Dashboard
 - Accounts
-- Transactions
 
 Secondary tools (hidden from main nav, optional access):
 
+- Transactions
 - Payoff Calculator
 - Debt Plan
 
@@ -114,9 +114,16 @@ Mitigation: Hide first, retire later after observation period.
 
 Implemented in the `initiative/simplify-surface-area` branch:
 
-- Sidebar now keeps only primary workflow surfaces: Dashboard, Accounts, Transactions.
-- `payoff-calculator` and `debt-plan` routes are still reachable directly.
-- Dashboard Overview now includes an "Advanced Tools" section linking to both secondary simulators.
+- Sidebar now keeps only primary workflow surfaces: Dashboard and Accounts.
+- `transactions`, `payoff-calculator`, and `debt-plan` routes are still reachable directly.
+- Dashboard Overview now includes an "Advanced Tools" section linking to secondary pages.
+
+## Recurring Data Principle
+
+Transaction-page visibility is a UX decision, not a data-model decision.
+
+- Recurring monthly obligations should remain backend-first inputs (`RecurringExpense` / cashflow endpoints).
+- Strategy and calendar planning should continue to rely on recurring obligations even if transaction history is rarely visited.
 
 ## Owner Notes
 

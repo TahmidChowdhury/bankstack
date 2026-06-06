@@ -21,12 +21,17 @@ Use it as the first stop before exploring the full codebase.
 
 - `/dashboard`: operational decision surface
 - `/accounts`: account metadata quality control
-- `/transactions`: activity history
 
 ## Secondary Surfaces
 
+- `/transactions`: activity history (manual review only)
 - `/debt-plan`: longer-range payoff simulation
 - `/payoff-calculator`: strategy sandbox
+
+## Recurring Monthly Obligations
+
+- Monthly recurring obligations are backend-first (`RecurringExpense` and cashflow computations), not dependent on frequent `/transactions` page use.
+- The UI can de-emphasize manual transaction browsing while still preserving planning quality through recurring-expense data.
 
 ## Current Account Balance Rules
 
